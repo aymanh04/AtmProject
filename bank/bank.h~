@@ -21,15 +21,15 @@
 #include <stdio.h>
 #include <hash_table.h>
 
-typedef struct _Bank {
-	// Networking state
-  	int sockfd;
+typedef struct _Bank
+{
+    // Networking state
+    int sockfd;
     struct sockaddr_in rtr_addr;
     struct sockaddr_in bank_addr;
 
     // Protocol state
     // TODO add more, as needed
-		
 } Bank;
 
 Bank* bank_create();

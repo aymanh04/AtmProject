@@ -73,5 +73,5 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 }
 
 void create_user(Bank *bank, char *name, int pin, double balance) {
-	
+
 }
