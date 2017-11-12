@@ -1,4 +1,4 @@
-/* 
+/*
  * The main program for the ATM.
  *
  * You are free to change this as necessary.
