@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <regex.h>
+#include "util_functions.c"
+#include "user_data.h"
 
 Bank* bank_create() {
     Bank *bank = (Bank*) malloc(sizeof(Bank));
@@ -28,6 +31,7 @@ Bank* bank_create() {
     // Set up the protocol state
     // TODO set up more, as needed
 
+	bank->accounts = hash_table_create(50);
     return bank;
 }
 
@@ -51,6 +55,34 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
     // TODO: Implement the bank's local commands
+	char cmds[4][251];
+	
+	// An invalid command or argument has been found.
+	if (bank_split_line(cmds, command) == -1) {
+		if (strcmp(cmds[0], "create-user") == 0) 
+			printf("Usage: create-user <user-name> <pin> <balance>\n");
+
+		
+		return;
+	}
+	
+	switch(cmds[0]) {
+		case "create-user" :
+			create_user(bank, cmds[1], atoi(cmds[2]), atoi(cmds[3]));
+			break;
+
+		case "deposit" :
+		
+			break;
+
+		case "balance" :
+
+			break;
+		default :
+		
+	}
+
+	
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
@@ -72,6 +104,9 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 	*/
 }
 
-void create_user(Bank *bank, char *name, int pin, double balance) {
-
+// Creates a user entry in the bank, along with a card for the user to use at the ATM.
+void create_user(Bank *bank, char *name, int pin, int balance) {
+	UserData *user;
+	create_user(&user, pin, balance);
+	hash_table_add(bank->accounts, name, user);
 }

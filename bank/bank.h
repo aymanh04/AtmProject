@@ -29,7 +29,8 @@ typedef struct _Bank {
 
     // Protocol state
     // TODO add more, as needed
-		
+	HashTable accounts;
+
 } Bank;
 
 Bank* bank_create();
