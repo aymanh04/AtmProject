@@ -18,11 +18,11 @@ int bank_split_line(char *arr[], char *line) {
 		if (i == 1 && strlen(str) > 250)
 			return -1;
 
-		// A valid PIN can only be 4 characters long.
+		/*// A valid PIN can only be 4 characters long.
 		if (i == 2 && strlen(str) != 4) {
 			if (strcmp(tmp, "create-user") == 0)
 				return -1;
-		}
+		}*/
 
 		strncpy(arr[i], str, 250 * sizeof(char));
 		i++;

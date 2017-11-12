@@ -68,7 +68,9 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 	
 	switch(cmds[0]) {
 		case "create-user" :
-			create_user(bank, cmds[1], atoi(cmds[2]), atoi(cmds[3]));
+			//int pin = atoi(cmds[2])
+			//int bal = atoi(cmds[3])
+			create_user(bank, cmds[1], cmds[2], cmds[3]);
 			break;
 
 		case "deposit" :
@@ -105,8 +107,47 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 }
 
 // Creates a user entry in the bank, along with a card for the user to use at the ATM.
-void create_user(Bank *bank, char *name, int pin, int balance) {
+void create_user(Bank *bank, char *name, char *pin, char *balance) {
+	FILE *fp;
+	char filename[256];
+	// Checking the formatting of inputs for validity.
+	if (!reg_matches(name, "[a-zA-Z]+") ||
+		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
+		!reg_matches(balance, "[0-9]+") {
+
+		printf("Usage: create-user <user-name> <pin> <balance>\n");
+		return;
+	}
+
+	int user_pin = atoi(pin);
+	int user_bal = atoi(balance);
+	// Further checking the validity of inputs.
+	if (strlen(name) > 250 || user_pin < 0 || user_bal < 0)	{
+		printf("Usage: create-user <user-name> <pin> <balance>\n");
+		return;
+	}
+	
+	// Checking if the user is already in the bank systems.
+	if (hash_table_find(bank->accounts, name) != NULL) {
+		printf("Error: user %s already exists\n", name);
+		return;
+	}
+
+	// Adding the user & data to the bank systems.
 	UserData *user;
-	create_user(&user, pin, balance);
+	create_data(&user, pin, balance);
 	hash_table_add(bank->accounts, name, user);
+	
+	// Creating filename for user's .card file.
+	strcpy(filename, name);
+	strncat(filename, ".card", 5);
+	// Creating the user's .card file.
+	if (!(fp = fopen(filename, "w+"))) {
+		printf("Error creating card file for user %s\n", name);
+		hash_table_del(bank->accounts, name);
+		return;
+	}
+
+	fprintf(fp, "%d,%d", pin, balance);
+	fclose(fp);
 }
