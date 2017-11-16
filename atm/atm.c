@@ -2,6 +2,7 @@
 #include "ports.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <regex.h>
 
@@ -73,9 +74,11 @@ void atm_process_command(ATM *atm, char *command) {
 	*/
 }
 
-int begin_session(char *data){
+int begin_session(char *data, ATM atm){
     char *namePattern = "[a-zA-Z]+";
     char *pinPattern = "[0-9][0-9][0-9][0-9]";
+    char recvline[10000];
+    int n;
     FILE *fp;
 
     if(logged){
@@ -84,6 +87,12 @@ int begin_session(char *data){
     }
     if(!reg_matches(data, namePattern)){
       fputs(strcat("Usage: begin-session ",data),stdout);
+      return 0;
+    }
+    atm_send(atm, strcat("isUser ",data), strlen(command));
+    n = atm_recv(atm,recvline,10000);
+    if(!n){
+      fputs("No such user",stdout);
       return 0;
     }
 
@@ -109,6 +118,15 @@ int withdraw(char *amt){
   }
   return 1;
 }
+/*
+  char recvline[10000];
+  int n;
+
+  atm_send(atm, command, strlen(command));
+  n = atm_recv(atm,recvline,10000);
+  recvline[n]=0;
+  fputs(recvline,stdout);
+*/
 int balance(){
   char *amtPattern = "[0-9]+";
   int num = atoi(amt);
@@ -129,7 +147,7 @@ int end_session(){
     return 0;
   }
   logged = false;
-
+  user = "";
   return 1;
 }
 bool reg_matches(const char *str, const char *pattern) {
