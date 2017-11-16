@@ -14,6 +14,9 @@ int bank_split_line(char *arr[], char *line) {
 		if (i == 0) 
 			tmp = str;
 
+		if (strcmp(tmp, "create-user") != 0 && strcmp(tmp, "deposit") != 0 && strcmp(tmp, "balance") != 0) 
+			return -1;
+		
 		// A valid username can be at most 250 characters.
 		if (i == 1 && strlen(str) > 250)
 			return -1;

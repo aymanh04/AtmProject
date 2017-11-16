@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <regex.h>
+#include <limits.h>
 #include "util_functions.c"
 #include "user_data.h"
 
@@ -59,10 +60,16 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 	
 	// An invalid command or argument has been found.
 	if (bank_split_line(cmds, command) == -1) {
-		if (strcmp(cmds[0], "create-user") == 0) 
+		// The command is create-user.
+		if (strcmp(cmds[0], "create-user") == 0) {
 			printf("Usage: create-user <user-name> <pin> <balance>\n");
-
-		
+		} else if (strcmp(cmds[0], "deposit") == 0) {
+			printf("Usage: deposit <user-name> <amt>\n");
+		} else if (strcmp(cmds[0], "balance") == 0) {
+			printf("Usage: balance <user-name>\n");
+		} else {
+			printf("Invalid command\n");
+		}
 		return;
 	}
 	
@@ -74,14 +81,15 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 			break;
 
 		case "deposit" :
-		
+			deposit(bank, cmds[1], cmds[2]);
 			break;
 
 		case "balance" :
-
+			balance(bank, cmds[1]);
 			break;
+
 		default :
-		
+			printf("Invalid command\n");
 	}
 
 	
@@ -110,19 +118,20 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	FILE *fp;
 	char filename[256];
+	int user_pin = atoi(pin);
+	int user_bal = atoi(balance);
+
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") ||
 		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
-		!reg_matches(balance, "[0-9]+") {
+		!reg_matches(balance, "[0-9]+")) {
 
 		printf("Usage: create-user <user-name> <pin> <balance>\n");
 		return;
 	}
 
-	int user_pin = atoi(pin);
-	int user_bal = atoi(balance);
 	// Further checking the validity of inputs.
-	if (strlen(name) > 250 || user_pin < 0 || user_bal < 0)	{
+	if (strlen(name) > 250 || user_pin < 0 || user_bal < 0 || user_bal > INT_MAX)	{
 		printf("Usage: create-user <user-name> <pin> <balance>\n");
 		return;
 	}
@@ -151,3 +160,64 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	fprintf(fp, "%d,%d", pin, balance);
 	fclose(fp);
 }
+
+void deposit(Bank *bank, char *name, char *amt) {
+	int amount;
+	UserData *user;
+
+	// Checking if the amount is larger than an int can hold.
+	if (atoi(amt) > INT_MAX) {
+		printf("Usage: deposit <user-name> <amt>\n");
+		return;
+	}
+
+	amount = atoi(amt);
+	// Checking the formatting of inputs for validity.
+	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
+		!reg_matches(amount, "[0-9]+") || amount < 0) {
+
+		printf("Usage: deposit <user-name> <amt>\n");
+		return;
+	}
+
+	// Checking if the user is already in the bank systems.
+	user = hash_table_find(bank->accounts, name)
+	if (!user) {
+		printf("No such user\n");
+		return;
+	}
+
+	// Making sure that the new balance cannot exceed the maximum int value.
+	if ((user->balance + amount) > INT_MAX) {
+		printf("Too rich for this program\n");
+		return;
+	}
+
+	// Deleting the old entry and replacing with the new.
+	user->balance += amount;
+	hash_table_del(bank->accounts, name);
+	hash_table_add(bank->accounts, name, user);	
+
+	// Deposit successful.
+	printf("$%d added to %s's account\n", amount, name);	
+}
+
+void balance(Bank *bank, char *name) {
+
+	// Checking the formatting of inputs for validity.
+	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250) {
+		printf("Usage: balance <user-name>\n");
+		return;
+	}
+
+	// Checking if the user is already in the bank systems.
+	user = hash_table_find(bank->accounts, name)
+	if (!user) {
+		printf("No such user\n");
+		return;
+	}
+	
+	// Printing user's balance.
+	printf("$%d\n", user->balance);
+}
+
