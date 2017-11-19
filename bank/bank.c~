@@ -5,8 +5,9 @@
 #include <unistd.h>
 #include <regex.h>
 #include <limits.h>
-#include "util_functions.c"
-#include "user_data.h"
+#include "util/hash_table.c"
+#include "util/util_functions.c"
+#include "util/user_data.c"
 
 Bank* bank_create() {
     Bank *bank = (Bank*) malloc(sizeof(Bank));
@@ -56,7 +57,12 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
     // TODO: Implement the bank's local commands
-	char cmds[4][251];
+	int i = 0;	
+	char *cmds[4];
+	
+	for (i = 0; i < 4; i++) {
+		cmds[i] = malloc(251);
+	}
 	
 	// An invalid command or argument has been found.
 	if (bank_split_line(cmds, command) == -1) {
@@ -73,26 +79,20 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 		return;
 	}
 	
-	switch(cmds[0]) {
-		case "create-user" :
-			//int pin = atoi(cmds[2])
-			//int bal = atoi(cmds[3])
-			create_user(bank, cmds[1], cmds[2], cmds[3]);
-			break;
 
-		case "deposit" :
-			deposit(bank, cmds[1], cmds[2]);
-			break;
-
-		case "balance" :
-			balance(bank, cmds[1]);
-			break;
-
-		default :
-			printf("Invalid command\n");
+	if (strcmp(cmds[0], "create-user") == 0) {
+		create_user(bank, cmds[1], cmds[2], cmds[3]);
+	} else if (strcmp(cmds[0], "deposit") == 0) {
+		deposit(bank, cmds[1], cmds[2]);
+	} else if (strcmp(cmds[0], "balance") == 0) {
+		balance(bank, cmds[1]);
+	} else {
+		printf("Invalid command\n");
 	}
-
 	
+	for (i = 0; i < 4; i++) {
+		free(cmds[i]);
+	}
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
@@ -104,6 +104,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 	 * it back to the ATM before printing it to stdout.
 	 */
 
+	
 	/*
     char sendline[1000];
     command[len]=0;
@@ -143,8 +144,8 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	}
 
 	// Adding the user & data to the bank systems.
-	UserData *user;
-	create_data(&user, pin, balance);
+	UserData *user = malloc(sizeof(UserData));
+	create_data(user, user_pin, user_bal);
 	hash_table_add(bank->accounts, name, user);
 	
 	// Creating filename for user's .card file.
@@ -154,10 +155,11 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	if (!(fp = fopen(filename, "w+"))) {
 		printf("Error creating card file for user %s\n", name);
 		hash_table_del(bank->accounts, name);
+		free(user);
 		return;
 	}
 
-	fprintf(fp, "%d,%d", pin, balance);
+	fprintf(fp, "%s,%s", pin, balance);
 	fclose(fp);
 }
 
@@ -174,14 +176,14 @@ void deposit(Bank *bank, char *name, char *amt) {
 	amount = atoi(amt);
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
-		!reg_matches(amount, "[0-9]+") || amount < 0) {
+		!reg_matches(amt, "[0-9]+") || amount < 0) {
 
 		printf("Usage: deposit <user-name> <amt>\n");
 		return;
 	}
 
 	// Checking if the user is already in the bank systems.
-	user = hash_table_find(bank->accounts, name)
+	user = hash_table_find(bank->accounts, name);
 	if (!user) {
 		printf("No such user\n");
 		return;
@@ -203,7 +205,7 @@ void deposit(Bank *bank, char *name, char *amt) {
 }
 
 void balance(Bank *bank, char *name) {
-
+	UserData *user;
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250) {
 		printf("Usage: balance <user-name>\n");
@@ -211,7 +213,7 @@ void balance(Bank *bank, char *name) {
 	}
 
 	// Checking if the user is already in the bank systems.
-	user = hash_table_find(bank->accounts, name)
+	user = hash_table_find(bank->accounts, name);
 	if (!user) {
 		printf("No such user\n");
 		return;

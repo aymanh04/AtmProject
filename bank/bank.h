@@ -19,7 +19,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
-#include <hash_table.h>
+#include "hash_table.h"
 
 typedef struct _Bank {
 	// Networking state
@@ -29,7 +29,7 @@ typedef struct _Bank {
 
     // Protocol state
     // TODO add more, as needed
-	HashTable accounts;
+	HashTable *accounts;
 
 } Bank;
 
@@ -39,6 +39,10 @@ ssize_t bank_send(Bank *bank, char *data, size_t data_len);
 ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len);
 void bank_process_local_command(Bank *bank, char *command, size_t len);
 void bank_process_remote_command(Bank *bank, char *command, size_t len);
+void create_user(Bank *bank, char *name, char *pin, char *balance);
+void deposit(Bank *bank, char *name, char *amt);
+void balance(Bank *bank, char *name);
+
 
 #endif
 

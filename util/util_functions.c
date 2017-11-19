@@ -1,5 +1,7 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 /* 
 	Splits a line containing a bank command and arguments. 
@@ -32,6 +34,7 @@ int bank_split_line(char *arr[], char *line) {
 	}
 	return 0;
 }
+
 
 bool reg_matches(const char *str, const char *pattern) {
     regex_t re;

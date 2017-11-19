@@ -6,4 +6,4 @@ typedef struct _UserData {
 	int balance;
 } UserData;
 
-void create_data(UserData user, int pin, int balance);
+void create_data(UserData *user, int pin, int balance);
