@@ -2,6 +2,7 @@
 #include "ports.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <regex.h>
@@ -75,7 +76,7 @@ void atm_process_command(ATM *atm, char *command) {
 }
 
 int begin_session(char *data, ATM atm){
-    char *namePattern = "[a-zA-Z]+";
+    char *namePattern = "^[a-zA-Z]{1,250} [a-zA-Z]{1,250} [a-zA-Z]{1,250}$";
     char *pinPattern = "[0-9][0-9][0-9][0-9]";
     char recvline[10000];
     int n;
@@ -86,7 +87,8 @@ int begin_session(char *data, ATM atm){
       return 0;
     }
     if(!reg_matches(data, namePattern)){
-      fputs(strcat("Usage: begin-session ",data),stdout);
+      fputs("Usage: begin-session ",stdout);
+      fputs(data,stdout);
       return 0;
     }
     atm_send(atm, strcat("isUser ",data), strlen(command));
@@ -106,14 +108,26 @@ int begin_session(char *data, ATM atm){
 }
 
 int withdraw(char *amt){
-  char *amtPattern = "[0-9]+";
+  char *amtPattern = "^[0-9]+$";
   int num = atoi(amt);
+  int n = 0;
   if(!logged){
     fputs("No user logged in",stdout);
     return 0;
   }
   if(num < 0 || ! reg_matches(amt,amtPattern)){
-    fputs(strcat("Usage: begin-session ",data),stdout);
+    fputs("Usage: withdraw ",stdout);
+    fputs(amt,stdout);
+    return 0;
+  }
+  atm_send(atm, strcat("withdraw ",amt), strlen(command));
+  n = atm_recv(atm,recvline,10000);
+  if(!n){
+    fputs("Insufficient funds",stdout);
+    return 0;
+  } else {
+    fputs(atm,stdout);
+    fputs(" dispensed",stdout);
     return 0;
   }
   return 1;
@@ -135,7 +149,7 @@ int balance(){
     return 0;
   }
   if(num < 0 || ! reg_matches(amt,amtPattern)){
-    fputs(strcat("Usage: begin-session ",data),stdout);
+    fputs("Usage: balance",stdout);
     return 0;
   }
   return 1;
