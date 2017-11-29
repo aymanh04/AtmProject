@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include "hash_table.h"
+#include "list.h"
 
 typedef struct _Bank {
 	// Networking state
@@ -29,7 +30,11 @@ typedef struct _Bank {
 
     // Protocol state
     // TODO add more, as needed
-	HashTable *accounts;
+	//HashTable *namePin;
+	//HashTable *nameBal;
+
+	List *namePin;
+	List *nameBal;
 
 } Bank;
 

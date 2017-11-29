@@ -342,11 +342,11 @@ int main(int argc, char *argv[]) {
 		return 64;
 	}
 
-	// Generating keys - if anything goes wrong, return.
+/*	// Generating keys - if anything goes wrong, return.
 	if (!gen_keypairs(bankFile, atmFile)) {
 		printf("Error creating initialization files\n");
 		return 64;
-	}
+	}*/
 	
 	fclose(bankFile);
 	fclose(atmFile);

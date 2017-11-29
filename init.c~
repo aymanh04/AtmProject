@@ -94,7 +94,7 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 			//fputs(strtmp, bankFile);
 			fputs("\n", bankFile);
 			fputs("Public: ", bankFile);
-			PEM_write_PUBKEY(bankFile, *pPub);
+			PEM_write_PUBKEY(bankFile, pPub);
 			//fputs(pemKey, bankFile);
 			fputs("\n\n", bankFile);
 		} else {
@@ -103,7 +103,7 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 			//fputs(strtmp, atmFile);
 			fputs("\n", atmFile);
 			fputs("Public: ", atmFile);
-			PEM_write_PUBKEY(bankFile, *pPub);
+			PEM_write_PUBKEY(bankFile, pPub);
 			//fputs(pemKey, atmFile);
 			fputs("\n\n", atmFile);
 		}
