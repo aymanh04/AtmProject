@@ -10,6 +10,51 @@
 #include <openssl/evp.h>
 
 
+/*int gen_keypairs(FILE *bankFile, FILE *atmFile) {
+	RSA *rsa;
+	BIGNUM *bn;
+	BIO *bioPriv, *bioPub;
+	const EVP_CIPHER *cipher;
+	FILE *privKeyFile, *pubKeyFile;
+	int keylen, i, tmp;
+	char *pemKey;
+	int bits = 2048;
+
+	char *line;
+	size_t len = 0;
+	ssize_t lines;
+	char *pubKeyStr = malloc(4096 * sizeof(char));
+	char *privKeyStr = malloc(4096 * sizeof(char));
+
+
+	privKeyFile = fopen("private.pem", "r");
+	pubKeyFile = fopen("public.pem", "r");
+	
+	while ((lines = getline(&line, &len, pubKeyFile)) != -1){
+		strcat(pubKeyStr, line);
+	}
+
+	while ((lines = getline(&line, &len, privKeyFile)) != -1){
+		strcat(privKeyStr, line);
+	}
+	
+	fputs("Public Key Size: ", bankFile);
+	fputs("\n", bankFile);
+	fputs("Public: ", bankFile);
+	fputs(pubKeyStr, bankFile);
+	fputs("\n", bankFile);
+	fputs("\n", bankFile);
+
+	fputs("Private Key Size: ", bankFile);
+	fputs("\n", bankFile);
+	fputs("Private: ", bankFile);
+	fputs(privKeyStr, bankFile);
+	fputs("\n", bankFile);
+	
+	fclose(pubKeyFile);
+	fclose(privKeyFile);
+	return 1;
+}*/
 /* 
 Generates pairs of public/private keys for both the bank and atm. 
 
@@ -21,16 +66,24 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	BIO *bioPriv, *bioPub;
 	const EVP_CIPHER *cipher;
 	FILE *fp;
-	//FILE *privKeyFile, *pubKeyFile;
+	FILE *privKeyFile, *pubKeyFile;
 	int keylen, i, tmp;
 	char *pemKey;
 	int bits = 2048;
 
+	char *line;
+	size_t len = 0;
+	ssize_t lines;
+	
 	cipher = EVP_aes_256_cbc();
 	// Creating public/private key pairs for both the bank and atm.
 	for (i = 0; i < 2; i++) {
 		EVP_PKEY *pPriv;
 		EVP_PKEY *pPub;
+		RSA *rsaKey;
+
+		char *pubKeyStr = malloc(4096 * sizeof(char));
+		char *privKeyStr = malloc(4096 * sizeof(char));
 
 		bn = BN_new();
 		if (BN_set_word(bn, RSA_F4) != 1) {
@@ -68,43 +121,29 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 
 			return -1;
 		}
-		//BIO_free_all(bioPub);
-		//fp = fopen("public.pem", "wt");
-		pPub = PEM_read_bio_PUBKEY(bioPub, NULL, NULL, NULL);
-		
+		BIO_free_all(bioPub);
 
-		//keylen = BIO_pending(bioPub);
-		//pemKey = calloc(keylen + 1, 1);
-		// Getting the public key from the file. 
-		//BIO_read(bioPub, pemKey, keylen);
+		pubKeyFile = fopen("public.pem", "r");
 
-		//printf("Getting public key... size %d\n", keylen);
+		while ((lines = getline(&line, &len, pubKeyFile)) != -1){
+			strcat(pubKeyStr, line);
+		}
 
-		/*// Converting the keysize int into a string. 
-		// Source: https://stackoverflow.com/questions/8257714/how-to-convert-an-int-to-string-in-c
-		tmp = (int)((ceil(log10(keylen)) + 1) * sizeof(char));
-		char strtmp[tmp];
-		sprintf(strtmp, "%d", keylen);
-		// End sourced code*/
-
+		fclose(pubKeyFile);
 		printf("Writing public key to file.\n");
 		if (i == 0) {
 			// Writing to init.bank
 			fputs("Public Key Size: ", bankFile);
-			//fputs(strtmp, bankFile);
 			fputs("\n", bankFile);
 			fputs("Public: ", bankFile);
-			PEM_write_PUBKEY(bankFile, pPub);
-			//fputs(pemKey, bankFile);
+			fputs(pubKeyStr, bankFile);
 			fputs("\n\n", bankFile);
 		} else {
 			// Writing to init.atm
 			fputs("Public Key Size: ", atmFile);
-			//fputs(strtmp, atmFile);
 			fputs("\n", atmFile);
 			fputs("Public: ", atmFile);
-			PEM_write_PUBKEY(bankFile, pPub);
-			//fputs(pemKey, atmFile);
+			fputs(pubKeyStr, atmFile);
 			fputs("\n\n", atmFile);
 		}
 
@@ -120,43 +159,37 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 
 			return -1;
 		}
-		keylen = BIO_pending(bioPriv);
-		pemKey = calloc(keylen + 1, 1);
-		// Getting the private key from the file. 
-		printf("Getting private key from file.\n");
-		BIO_read(bioPriv, pemKey, keylen);
+		BIO_free_all(bioPriv);
 
-		/*// Converting the keysize int into a string. 
-		// Source: https://stackoverflow.com/questions/8257714/how-to-convert-an-int-to-string-in-c
-		int tmptwo = (int)((ceil(log10(keylen)) + 1) * sizeof(char));
-		char strtmptwo[tmptwo];
-		sprintf(strtmptwo, "%d", keylen);
-		// End sourced code*/
+		privKeyFile = fopen("private.pem", "r");
+
+		while ((lines = getline(&line, &len, privKeyFile)) != -1){
+			strcat(privKeyStr, line);
+		}
+
+		fclose(privKeyFile);
 		printf("Writing private key to file.\n");
 		if (i == 0) {
 			// Writing to init.bank
 			fputs("Private Key Size: ", bankFile);
-			//fputs(strtmptwo, bankFile);
 			fputs("\n", bankFile);
 			fputs("Private: ", bankFile);
-			fputs(pemKey, bankFile);
+			fputs(privKeyStr, bankFile);
 			fputs("\n", bankFile);
 		} else {
 			// Writing to init.atm
 			fputs("Private Key Size: ", atmFile);
-			//fputs(strtmptwo, atmFile);
 			fputs("\n", atmFile);
 			fputs("Private: ", atmFile);
-			fputs(pemKey, atmFile);
+			fputs(privKeyStr, atmFile);
 			fputs("\n", atmFile);
 		}
 
 		// Freeing all structures/memory used. 
-		BIO_free_all(bioPriv);
-		BIO_free_all(bioPub);
 		BN_free(bn);
 		RSA_free(rsa);
-		free(pemKey);
+		free(pubKeyStr);
+		free(privKeyStr);
 	}
 
 	// Do rest of init down here...

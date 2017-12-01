@@ -39,6 +39,7 @@ Bank* bank_create() {
 
 	bank->namePin = list_create();
 	bank->nameBal =	list_create();
+	bank->accounts = hash_table_create(10);
     return bank;
 }
 
@@ -86,7 +87,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 		cmds[i] = malloc(251);
 		memset(cmds[i], '\0', 251);
 	}
-	printf("%s\n", command);
+	//printf("%s\n", command);
 	sscanf(command, "%s %s %s %s", cmds[0], cmds[1], cmds[2], cmds[3]);
 
 	//printf("%s\n", cmd2Temp);
@@ -122,7 +123,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 	}*/
 	
 	if (strcmp(cmds[0], "create-user") == 0) {
-		printf("create\n");
+		//printf("create\n");
 		create_user(bank, cmds[1], cmds[2], cmds[3]);
 	} else if (strcmp(cmds[0], "deposit") == 0) {
 		deposit(bank, cmds[1], cmds[2]);
@@ -180,16 +181,22 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	}
 	
 	// Checking if the user is already in the bank systems.
-	//if (hash_table_find(bank->nameBal, name) != NULL) {
+	/*if (hash_table_find(bank->accounts, name) != NULL) {
+		printf("Error: user %s already exists\n", name);
+		return;
+	}*/
+
 	if (list_find(bank->nameBal, name) != NULL) {
 		printf("Error: user %s already exists\n", name);
 		return;
 	}
 
 	// Adding the user & data to the bank systems.
-	//UserData *user = malloc(sizeof(UserData));
-	//create_data(user, user_pin, user_bal);
+	/*UserData *user = malloc(sizeof(UserData));
+	create_data(user, user_pin, user_bal);
 	//strcpy(personName, name);
+	hash_table_add(bank->accounts, name, user);*/
+
 	list_add(bank->namePin, name, pin);
 	list_add(bank->nameBal, name, balance);
 	
@@ -202,7 +209,8 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		printf("Error creating card file for user %s\n", name);
 		list_del(bank->nameBal, name);
 		list_del(bank->namePin, name);
-		//free(user);
+		/*hash_table_del(bank->accounts, name);
+		free(user);*/
 		return;
 	}
 
@@ -237,7 +245,7 @@ void deposit(Bank *bank, char *name, char *amt) {
 	//printf("%s\n", name);
 	
 	// Checking if the user is already in the bank systems.
-	//user = hash_table_find(bank->namePin, name);
+	//user = hash_table_find(bank->accounts, name);
 	balPtr = (char*)list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
@@ -254,9 +262,11 @@ void deposit(Bank *bank, char *name, char *amt) {
 
 	// Deleting the old entry and replacing with the new.
 	bal += amount;
-	//printf("balance: %d\n", bal);
 	sprintf(balance, "%d", bal);
-	//printf("balance: %s\n", balance);
+
+	//user->balance = bal;
+	//hash_table_del(bank->accounts, name);
+	//hash_table_add(bank->accounts, name, user);
 	list_del(bank->nameBal, name);
 	list_add(bank->nameBal, name, balance);	
 
@@ -275,15 +285,20 @@ void balance(Bank *bank, char *name) {
 		printf("Usage: balance <user-name>\n");
 		return;
 	}
-	//printf("list size %d\n", list_size(bank->nameBal));
-	//printf("%s\n", name);
+
 	// Checking if the user is already in the bank systems.
-	//user = (UserData*)hash_table_find(bank->accounts, username);
+	/*user = (UserData*)hash_table_find(bank->accounts, name);
+	if (!user) {
+		printf("No such user\n");
+		return;
+	}*/
+
 	balPtr = (char*) list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
 		return;
 	}
+	//bal = atoi(user->balance);
 	bal = atoi(balPtr);
 	// Printing user's balance.
 	printf("$%d\n", bal);

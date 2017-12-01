@@ -36,6 +36,8 @@ typedef struct _Bank {
 	List *namePin;
 	List *nameBal;
 
+	HashTable *accounts;
+
 } Bank;
 
 Bank* bank_create();
