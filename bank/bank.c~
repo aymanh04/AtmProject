@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <regex.h>
 #include <limits.h>
-#include "util/list.c"
 #include "util/hash_table.c"
 #include "util/util_functions.c"
 #include "util/user_data.c"
