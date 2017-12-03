@@ -1,5 +1,6 @@
 #include "atm.h"
 #include "ports.h"
+#include "util/util_functions.c"
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -57,25 +58,39 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len) {
 
 void atm_process_command(ATM *atm, char *command) {
     // TODO: Implement the ATM's side of the ATM-bank protocol
+   int i =0;
+    char *cmds[2];
+    cmds[0] = malloc(251);
+    cmds[1] = malloc(251);
 
-	/*
-	 * The following is a toy example that simply sends the
-	 * user's command to the bank, receives a message from the
-	 * bank, and then prints it to stdout.
-	 */
-
-	/*
-    char recvline[10000];
-    int n;
-
-    atm_send(atm, command, strlen(command));
-    n = atm_recv(atm,recvline,10000);
-    recvline[n]=0;
-    fputs(recvline,stdout);
-	*/
+    if (bank_split_line(cmds, command) == -1) {
+  		// The command is create-user.
+  		if (strcmp(cmds[0], "begin-session") == 0) {
+        fputs("Usage: begin-session <user-name>",stdout);
+  		} else if (strcmp(cmds[0], "withdraw") == 0) {
+        fputs("Usage: withdraw <amt>\n",stdout);
+  		} else if (strcmp(cmds[0], "balance") == 0) {
+        fputs("Usage: balance\n",stdout);
+  		} else {
+        fputs("Invalid command\n",stdout);
+  		}
+  		return;
+  	}
+    if (strcmp(cmds[0], "begin-session") == 0) {
+  		begin_session(cmds[1], atm);
+  	} else if (strcmp(cmds[0], "withdraw") == 0) {
+  		withdraw(cmds[1], atm);
+  	} else if (strcmp(cmds[0], "balance") == 0) {
+  		balance(atm);
+  	} else {
+  		printf("Invalid command\n");
+      return;
+  	}
+  	free(cmds[0]);
+    free(cmds[1]);
 }
 
-int begin_session(char *data, ATM atm){
+int begin_session(char *data, ATM *atm){
     char *namePattern = "^[a-zA-Z]{1,250} [a-zA-Z]{1,250} [a-zA-Z]{1,250}$";
     char *pinPattern = "[0-9][0-9][0-9][0-9]";
     char recvline[10000];
@@ -87,8 +102,7 @@ int begin_session(char *data, ATM atm){
       return 0;
     }
     if(!reg_matches(data, namePattern)){
-      fputs("Usage: begin-session ",stdout);
-      fputs(data,stdout);
+      fputs("Usage: begin-session <user-name>",stdout);
       return 0;
     }
     atm_send(atm, strcat("isUser ",data), strlen(command));
@@ -107,7 +121,7 @@ int begin_session(char *data, ATM atm){
     return 1;
 }
 
-int withdraw(char *amt){
+int withdraw(char *amt, ATM *atm){
   char *amtPattern = "^[0-9]+$";
   int num = atoi(amt);
   int n = 0;
@@ -116,8 +130,7 @@ int withdraw(char *amt){
     return 0;
   }
   if(num < 0 || ! reg_matches(amt,amtPattern)){
-    fputs("Usage: withdraw ",stdout);
-    fputs(amt,stdout);
+    fputs("Usage: withdraw <amt>",stdout);
     return 0;
   }
   atm_send(atm, strcat("withdraw ",amt), strlen(command));
@@ -126,7 +139,7 @@ int withdraw(char *amt){
     fputs("Insufficient funds",stdout);
     return 0;
   } else {
-    fputs(atm,stdout);
+    fputs(amt,stdout);
     fputs(" dispensed",stdout);
     return 0;
   }
@@ -141,7 +154,7 @@ int withdraw(char *amt){
   recvline[n]=0;
   fputs(recvline,stdout);
 */
-int balance(){
+int balance(ATM *atm){
   char *amtPattern = "[0-9]+";
   int num = atoi(amt);
   if(!logged){

@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-/* 
-	Splits a line containing a bank command and arguments. 
-	Returns: 0 on success, -1 on error. 
+/*
+	Splits a line containing a bank command and arguments.
+	Returns: 0 on success, -1 on error.
 */
 int bank_split_line(char *arr[], char *line) {
 	int i = 0;
@@ -13,12 +13,12 @@ int bank_split_line(char *arr[], char *line) {
 	char *tmp;
 	while (((str = strsep(&line, " ")) != NULL) && (i < 4)) {
 		// Storing the command name.
-		if (i == 0) 
+		if (i == 0)
 			tmp = str;
 
-		if (strcmp(tmp, "create-user") != 0 && strcmp(tmp, "deposit") != 0 && strcmp(tmp, "balance") != 0) 
+		if (strcmp(tmp, "create-user") != 0 && strcmp(tmp, "deposit") != 0 && strcmp(tmp, "balance") != 0)
 			return -1;
-		
+
 		// A valid username can be at most 250 characters.
 		if (i == 1 && strlen(str) > 250)
 			return -1;
@@ -35,6 +35,49 @@ int bank_split_line(char *arr[], char *line) {
 	return 0;
 }
 
+int atm_split_line(char *arr[], char *line) {
+	int i = 0;
+	char *str;
+	char *tmp;
+	while (((str = strsep(&line, " ")) != NULL) && (i < 2)) {
+		// Storing the command name.
+		if (i == 0)
+			tmp = str;
+
+		if (strcmp(tmp, "begin-session") != 0 && strcmp(tmp, "withdraw") != 0 && strcmp(tmp, "balance") != 0)
+			return -1;
+
+		// A valid username can be at most 250 characters.
+		if (i == 1 && strlen(str) > 250)
+			return -1;
+
+		strncpy(arr[i], str, 250 * sizeof(char));
+		i++;
+	}
+	return 0;
+}
+
+int atm_bank_split_line(char *arr[], char *line) {
+	int i = 0;
+	char *str;
+	char *tmp;
+	while (((str = strsep(&line, " ")) != NULL) && (i < 3)) {
+		// Storing the command name.
+		if (i == 0)
+			tmp = str;
+
+		if (strcmp(tmp, "isUser") != 0 && strcmp(tmp, "withdraw") != 0 && strcmp(tmp, "balance") != 0)
+			return -1;
+
+		// A valid username can be at most 250 characters.
+		if (i == 1 && strlen(str) > 250)
+			return -1;
+
+		strncpy(arr[i], str, 250 * sizeof(char));
+		i++;
+	}
+	return 0;
+}
 
 bool reg_matches(const char *str, const char *pattern) {
     regex_t re;

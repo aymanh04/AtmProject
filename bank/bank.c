@@ -58,13 +58,13 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
     // TODO: Implement the bank's local commands
-	int i = 0;	
+	int i = 0;
 	char *cmds[4];
-	
+
 	for (i = 0; i < 4; i++) {
 		cmds[i] = malloc(251);
 	}
-	
+
 	// An invalid command or argument has been found.
 	if (bank_split_line(cmds, command) == -1) {
 		// The command is create-user.
@@ -79,7 +79,7 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 		}
 		return;
 	}
-	
+
 
 	if (strcmp(cmds[0], "create-user") == 0) {
 		create_user(bank, cmds[1], cmds[2], cmds[3]);
@@ -90,32 +90,54 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 	} else {
 		printf("Invalid command\n");
 	}
-	
+
 	for (i = 0; i < 4; i++) {
 		free(cmds[i]);
 	}
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
-    // TODO: Implement the bank side of the ATM-bank protocol
+int i = 0;
+char *cmds[3];
 
-	/*
-	 * The following is a toy example that simply receives a
-	 * string from the ATM, prepends "Bank got: " and echoes 
-	 * it back to the ATM before printing it to stdout.
-	 */
-
-	
-	/*
-    char sendline[1000];
-    command[len]=0;
-    sprintf(sendline, "Bank got: %s", command);
-    bank_send(bank, sendline, strlen(sendline));
-    printf("Received the following:\n");
-    fputs(command, stdout);
-	*/
+for (i = 0; i < 3; i++) {
+  cmds[i] = malloc(251);
 }
 
+// An invalid command or argument has been found.
+if (atm_bank_split_line(cmds, command) == -1) {
+  // The command is create-user.
+  if (strcmp(cmds[0], "create-user") == 0) {
+    printf("Usage: create-user <user-name> <pin> <balance>\n");
+  } else if (strcmp(cmds[0], "deposit") == 0) {
+    printf("Usage: deposit <user-name> <amt>\n");
+  } else if (strcmp(cmds[0], "balance") == 0) {
+    printf("Usage: balance <user-name>\n");
+  } else {
+    printf("Invalid command\n");
+  }
+  return;
+}
+
+
+if (strcmp(cmds[0], "isUser") == 0) {
+  isUser(cmds[1]);
+} else if (strcmp(cmds[0], "withdraw") == 0) {
+  atmWithdraw(cmds[1], cmds[2]);
+} else if (strcmp(cmds[0], "balance") == 0) {
+  atmBalance(cmds[1],cmds[2]);
+} else {
+  printf("Invalid command\n");
+}
+
+for (i = 0; i < 4; i++) {
+  free(cmds[i]);
+}
+}
+
+void isUser(char *name){
+  
+}
 // Creates a user entry in the bank, along with a card for the user to use at the ATM.
 void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	FILE *fp;
@@ -137,7 +159,7 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		printf("Usage: create-user <user-name> <pin> <balance>\n");
 		return;
 	}
-	
+
 	// Checking if the user is already in the bank systems.
 	if (hash_table_find(bank->accounts, name) != NULL) {
 		printf("Error: user %s already exists\n", name);
@@ -148,7 +170,7 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	UserData *user = malloc(sizeof(UserData));
 	create_data(user, user_pin, user_bal);
 	hash_table_add(bank->accounts, name, user);
-	
+
 	// Creating filename for user's .card file.
 	strcpy(filename, name);
 	strncat(filename, ".card", 5);
@@ -199,10 +221,10 @@ void deposit(Bank *bank, char *name, char *amt) {
 	// Deleting the old entry and replacing with the new.
 	user->balance += amount;
 	hash_table_del(bank->accounts, name);
-	hash_table_add(bank->accounts, name, user);	
+	hash_table_add(bank->accounts, name, user);
 
 	// Deposit successful.
-	printf("$%d added to %s's account\n", amount, name);	
+	printf("$%d added to %s's account\n", amount, name);
 }
 
 void balance(Bank *bank, char *name) {
@@ -219,8 +241,7 @@ void balance(Bank *bank, char *name) {
 		printf("No such user\n");
 		return;
 	}
-	
+
 	// Printing user's balance.
 	printf("$%d\n", user->balance);
 }
-
