@@ -26,7 +26,7 @@ int main(int argc, char**argv) {
 		return 64;
 	}
 
-	Bank *bank = bank_create();
+	Bank *bank = bank_create(fp);
 
 	printf("%s", prompt);
 	fflush(stdout);

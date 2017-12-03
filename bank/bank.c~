@@ -7,10 +7,10 @@
 #include <limits.h>
 #include "util/list.c"
 #include "util/hash_table.c"
-#include "util/util_functions.c"
+//#include "util/util_functions.c"
 #include "util/user_data.c"
 
-Bank* bank_create(FILE *fp) {
+Bank* bank_create(FILE *fp, char *fname) {
     Bank *bank = (Bank*) malloc(sizeof(Bank));
     if(bank == NULL) {
         perror("Could not allocate Bank");
@@ -39,7 +39,7 @@ Bank* bank_create(FILE *fp) {
 
 	bank->namePin = list_create();
 	bank->nameBal =	list_create();
-	bank->accounts = hash_table_create(10);
+	bank->fname = fname;
 	bank->file = fp;
     return bank;
 }
@@ -163,6 +163,20 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		list_del(bank->namePin, name);
 		return;
 	}
+
+	int keylen = getKeyLen(0, 0, bank->fname);
+	printf("pubkey keylen: %d\n", keylen);
+	char *pubKey = malloc(keylen + 1);
+	memset(pubKey, '\0', keylen + 1);
+	getKey(0, 0, bank->fname, pubKey, keylen);
+	
+	printf("Public Key: %s\n", pubKey);
+	keylen = getKeyLen(1, 0, bank->fname);
+	printf("privkey keylen: %d\n", keylen);
+	char *privKey = malloc(keylen + 1);
+	memset(privKey, '\0', keylen + 1);
+	getKey(0, 0, bank->fname, privKey, keylen);
+	printf("Private Key: %s\n", privKey);
 
 	fprintf(fp, "%s,%s", pin, balance);
 	fclose(fp);

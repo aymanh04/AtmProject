@@ -15,11 +15,11 @@ Generates pairs of public/private keys for both the bank and atm.
 
 */
 int gen_keypairs(FILE *bankFile, FILE *atmFile) {
-	RSA *rsa;
-	BIGNUM *bn;
-	BIO *bioPriv, *bioPub;
+	RSA *rsaBank, *rsaAtm;
+	BIGNUM *bnBank, *bnAtm;
+	BIO *bioPrivBank, *bioPubBank, *bioPrivAtm, *bioPubAtm;
 	FILE *privKeyFile, *pubKeyFile;
-	int i;
+	//int i;
 	int bits = 2048;
 
 	char *line;
@@ -27,122 +27,176 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	ssize_t lines;
 	
 	// Creating public/private key pairs for both the bank and atm.
-	for (i = 0; i < 2; i++) {
-		char *pubKeyStr = malloc(4096 * sizeof(char));
-		char *privKeyStr = malloc(4096 * sizeof(char));
-		
-		bn = BN_new();
-		if (BN_set_word(bn, RSA_F4) != 1) {
-			BIO_free_all(bioPriv);
-			BIO_free_all(bioPub);
-			BN_free(bn);
-			RSA_free(rsa);
-			// Add atm failure message...
-			
-			return -1;
-		}
 
-		// Generating the RSA struct.
-		rsa = RSA_new();
-		printf("Making RSA struct\n");
-		if (RSA_generate_key_ex(rsa, bits, bn, NULL) != 1) {
-			BIO_free_all(bioPriv);
-			BIO_free_all(bioPub);
-			BN_free(bn);
-			RSA_free(rsa);
-			// Add atm failure message...
-			
-			return -1;
-		}
+// Creating Bank keys.
+	char *pubKeyStrBank = malloc(4096 * sizeof(char));
+	char *privKeyStrBank = malloc(4096 * sizeof(char));
 
-		// Creating the public key file and generating the public key.
-		printf("Making pubkey file\n");
-		bioPub = BIO_new_file("public.pem", "w+");
-		if (PEM_write_bio_RSAPublicKey(bioPub, rsa) != 1) {
-			BIO_free_all(bioPriv);
-			BIO_free_all(bioPub);
-			BN_free(bn);
-			RSA_free(rsa);
-			// Add atm failure message...
-
-			return -1;
-		}
-		BIO_free_all(bioPub); // Done with BIO file.
-
-		pubKeyFile = fopen("public.pem", "r");
-
-		while ((lines = getline(&line, &len, pubKeyFile)) != -1){
-			strcat(pubKeyStr, line);
-		}
-
-		fclose(pubKeyFile);
-		printf("Writing public key to file.\n");
-		if (i == 0) {
-			// Writing to init.bank
-			fputs("Public Key Size: ", bankFile);
-			fprintf(bankFile, "%d\n", (int)strlen(pubKeyStr));
-			//fputs("%d\n", (int)strlen(pubKeyStr));
-			//fputs("\n", bankFile);
-			fputs("Public: ", bankFile);
-			fputs(pubKeyStr, bankFile);
-			fputs("\n\n", bankFile);
-		} else {
-			// Writing to init.atm
-			fputs("Public Key Size: ", atmFile);
-			fprintf(atmFile, "%d\n", (int)strlen(pubKeyStr));
-			//fputs("%d\n", (int)strlen(pubKeyStr));
-			//fputs("\n", atmFile);
-			fputs("Public: ", atmFile);
-			fputs(pubKeyStr, atmFile);
-			fputs("\n\n", atmFile);
-		}
-
-		// Creating the private key file and generating the private key. 
-		printf("Creating private key file  & key.\n");
-		bioPriv = BIO_new_file("private.pem", "w+");
-		if (PEM_write_bio_RSAPrivateKey(bioPriv, rsa, NULL, NULL, 0, NULL, NULL) != 1) {
-			BIO_free_all(bioPriv);
-			BIO_free_all(bioPub);
-			BN_free(bn);
-			RSA_free(rsa);
-			// Add atm failure message...
-
-			return -1;
-		}
-		BIO_free_all(bioPriv);
-
-		privKeyFile = fopen("private.pem", "r");
-
-		while ((lines = getline(&line, &len, privKeyFile)) != -1){
-			strcat(privKeyStr, line);
-		}
-
-		fclose(privKeyFile);
-		printf("Writing private key to file.\n");
-		if (i == 0) {
-			// Writing to init.bank
-			fputs("Private Key Size: ", bankFile);
-			fprintf(bankFile, "%d\n", (int)strlen(privKeyStr));
-			//fputs("\n", bankFile);
-			fputs("Private: ", bankFile);
-			fputs(privKeyStr, bankFile);
-			fputs("\n", bankFile);
-		} else {
-			// Writing to init.atm
-			fputs("Private Key Size: ", atmFile);
-			fprintf(atmFile, "%d\n", (int)strlen(privKeyStr));
-			//fputs("\n", atmFile);
-			fputs("Private: ", atmFile);
-			fputs(privKeyStr, atmFile);
-			fputs("\n", atmFile);
-		}
-
-		// Freeing all structures/memory used. 
-		BN_free(bn);
-		RSA_free(rsa);
-		free(pubKeyStr);
-		free(privKeyStr);
+	char *pubKeyStrAtm = malloc(4096 * sizeof(char));
+	char *privKeyStrAtm = malloc(4096 * sizeof(char));
+	
+	bnBank = BN_new();
+	if (BN_set_word(bnBank, RSA_F4) != 1) {
+		BN_free(bnBank);
+		return -1;
 	}
+
+	// Generating the RSA struct.
+	rsaBank = RSA_new();
+	printf("Making RSA struct\n");
+	if (RSA_generate_key_ex(rsaBank, bits, bnBank, NULL) != 1) {
+		BN_free(bnBank);
+		RSA_free(rsaBank);
+		return -1;
+	}
+
+	// Creating the public key file and generating the public key.
+	printf("Making pubkey file\n");
+	bioPubBank = BIO_new_file("publicBank.pem", "w+");
+	if (PEM_write_bio_RSAPublicKey(bioPubBank, rsaBank) != 1) {
+		BIO_free_all(bioPubBank);
+		BN_free(bnBank);
+		RSA_free(rsaBank);
+		return -1;
+	}
+	BIO_free_all(bioPubBank); // Done with BIO file.
+
+	pubKeyFile = fopen("publicBank.pem", "r");
+
+	while ((lines = getline(&line, &len, pubKeyFile)) != -1){
+		strcat(pubKeyStrBank, line);
+	}
+
+	fclose(pubKeyFile);
+	printf("Writing public key to file.\n");
+	
+	// Writing to init.atm
+	fputs("Public Key Size: ", atmFile);
+	fprintf(atmFile, "%d\n", (int)strlen(pubKeyStrBank));
+	fputs("Public: ", atmFile);
+	fputs(pubKeyStrBank, atmFile);
+	fputs("\n\n", atmFile);
+		
+// Creating ATM pubKey
+	bnAtm = BN_new();
+	if (BN_set_word(bnAtm, RSA_F4) != 1) {
+		BN_free(bnAtm);
+		// Add atm failure message...
+		
+		return -1;
+	}
+
+	// Generating the RSA struct.
+	rsaAtm = RSA_new();
+	printf("Making RSA struct\n");
+	if (RSA_generate_key_ex(rsaAtm, bits, bnAtm, NULL) != 1) {
+		BN_free(bnAtm);
+		RSA_free(rsaAtm);
+		// Add atm failure message...
+		
+		return -1;
+	}
+
+	// Creating the public key file and generating the public key.
+	printf("Making pubkey file\n");
+	bioPubAtm = BIO_new_file("publicAtm.pem", "w+");
+	if (PEM_write_bio_RSAPublicKey(bioPubAtm, rsaAtm) != 1) {
+		BIO_free_all(bioPubAtm);
+		BN_free(bnAtm);
+		RSA_free(rsaAtm);
+		// Add atm failure message...
+
+		return -1;
+	}
+	BIO_free_all(bioPubAtm); // Done with BIO file.
+
+	pubKeyFile = fopen("publicAtm.pem", "r");
+
+	while ((lines = getline(&line, &len, pubKeyFile)) != -1){
+		strcat(pubKeyStrAtm, line);
+	}
+
+	fclose(pubKeyFile);
+	printf("Writing public key to file.\n");
+
+	// Writing to init.bank
+	fputs("Public Key Size: ", bankFile);
+	fprintf(bankFile, "%d\n", (int)strlen(pubKeyStrAtm));
+	fputs("Public: ", bankFile);
+	fputs(pubKeyStrAtm, bankFile);
+	fputs("\n\n", bankFile);
+
+
+	// Creating the private key file and generating the private key. 
+	printf("Creating private key file  & key.\n");
+	bioPrivBank = BIO_new_file("privateBank.pem", "w+");
+	if (PEM_write_bio_RSAPrivateKey(bioPrivBank, rsaBank, NULL, NULL, 0, NULL, NULL) != 1) {
+		BIO_free_all(bioPrivBank);
+		BN_free(bnBank);
+		RSA_free(rsaBank);
+		return -1;
+	}
+	BIO_free_all(bioPrivBank);
+
+	privKeyFile = fopen("privateBank.pem", "r");
+
+	while ((lines = getline(&line, &len, privKeyFile)) != -1){
+		strcat(privKeyStrBank, line);
+	}
+
+	fclose(privKeyFile);
+	printf("Writing private key to file.\n");
+	// Writing to init.bank
+	fputs("Private Key Size: ", bankFile);
+	fprintf(bankFile, "%d\n", (int)strlen(privKeyStrBank));
+	//fputs("\n", bankFile);
+	fputs("Private: ", bankFile);
+	fputs(privKeyStrBank, bankFile);
+	fputs("\n", bankFile);
+
+	// Freeing all structures/memory used. 
+	BN_free(bnBank);
+	RSA_free(rsaBank);
+	free(pubKeyStrBank);
+	free(privKeyStrBank);
+
+
+// Creating ATM keys.
+
+	// Creating the private key file and generating the private key. 
+	printf("Creating private key file  & key.\n");
+	bioPrivAtm = BIO_new_file("privateAtm.pem", "w+");
+	if (PEM_write_bio_RSAPrivateKey(bioPrivAtm, rsaAtm, NULL, NULL, 0, NULL, NULL) != 1) {
+		BIO_free_all(bioPrivAtm);
+		BN_free(bnAtm);
+		RSA_free(rsaAtm);
+		// Add atm failure message...
+
+		return -1;
+	}
+	BIO_free_all(bioPrivAtm);
+
+	privKeyFile = fopen("privateAtm.pem", "r");
+
+	while ((lines = getline(&line, &len, privKeyFile)) != -1){
+		strcat(privKeyStrAtm, line);
+	}
+
+	fclose(privKeyFile);
+	printf("Writing private key to file.\n");
+	// Writing to init.atm
+	fputs("Private Key Size: ", atmFile);
+	fprintf(atmFile, "%d\n", (int)strlen(privKeyStrAtm));
+	//fputs("\n", atmFile);
+	fputs("Private: ", atmFile);
+	fputs(privKeyStrAtm, atmFile);
+	fputs("\n", atmFile);
+
+	// Freeing all structures/memory used. 
+	BN_free(bnAtm);
+	RSA_free(rsaAtm);
+	free(pubKeyStrAtm);
+	free(privKeyStrAtm);
 
 	// Do rest of init down here...
 	return 1;
