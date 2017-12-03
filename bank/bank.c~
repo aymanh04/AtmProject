@@ -10,7 +10,7 @@
 #include "util/util_functions.c"
 #include "util/user_data.c"
 
-Bank* bank_create() {
+Bank* bank_create(FILE *fp) {
     Bank *bank = (Bank*) malloc(sizeof(Bank));
     if(bank == NULL) {
         perror("Could not allocate Bank");
@@ -40,6 +40,7 @@ Bank* bank_create() {
 	bank->namePin = list_create();
 	bank->nameBal =	list_create();
 	bank->accounts = hash_table_create(10);
+	bank->file = fp;
     return bank;
 }
 
@@ -64,71 +65,31 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
     // TODO: Implement the bank's local commands
 	int i = 0;	
-	/*char cmd1Temp[12];
-	char cmd2Temp[251];
-	char cmd3Temp[4];
-	char cmd4Temp[12];
-
-	char cmd1[12];
-	char cmd2[251];
-	char cmd3[4];
-	char cmd4[12];
-	
-	memset(cmd1Temp, 0x0, 12);
-	memset(cmd2Temp, 0x0, 251);
-	memset(cmd3Temp, 0x0, 4);
-	memset(cmd4Temp, 0x0, 12);
-	memset(cmd1, 0x0, 12);
-	memset(cmd2, 0x0, 251);
-	memset(cmd3, 0x0, 4);
-	memset(cmd4, 0x0, 12);*/
 	char *cmds[4];
+
 	for (i = 0; i < 4; i++) {
 		cmds[i] = malloc(251);
 		memset(cmds[i], '\0', 251);
 	}
-	//printf("%s\n", command);
+
 	sscanf(command, "%s %s %s %s", cmds[0], cmds[1], cmds[2], cmds[3]);
-
-	//printf("%s\n", cmd2Temp);
-	// An invalid command or argument has been found.
-	/*if (bank_split_line(cmds, command) == -1) {
-		// The command is create-user.
-		if (strcmp(cmds[0], "create-user") == 0) {
-			printf("Usage: create-user <user-name> <pin> <balance>\n");
-		} else if (strcmp(cmds[0], "deposit") == 0) {
-			printf("Usage: deposit <user-name> <amt>\n");
-		} else if (strcmp(cmds[0], "balance") == 0) {
-			printf("Usage: balance <user-name>\n");
-		} else {
-			printf("Invalid command\n");
-		}
-		return;
-	}*/
-	/*strncpy(cmd1, cmd1Temp, 12);
-	strncpy(cmd2, cmd2Temp, strlen(cmd2Temp));
-	strncpy(cmd3, cmd3Temp, strlen(cmd3Temp));
-	strncpy(cmd4, cmd4Temp, strlen(cmd4Temp));
-
-	printf("%s\n", cmd2);*/
-	/*if (strcmp(cmd1, "create-user") == 0) {
-		printf("create\n");
-		create_user(bank, cmd2, cmd3, cmd4);
-	} else if (strcmp(cmd1, "deposit") == 0) {
-		deposit(bank, cmd2, cmd3);
-	} else if (strcmp(cmd1, "balance") == 0) {
-		balance(bank, cmd2);
-	} else {
-		printf("Invalid command\n");
-	}*/
 	
 	if (strcmp(cmds[0], "create-user") == 0) {
-		//printf("create\n");
 		create_user(bank, cmds[1], cmds[2], cmds[3]);
 	} else if (strcmp(cmds[0], "deposit") == 0) {
-		deposit(bank, cmds[1], cmds[2]);
+		// Checking for extra inputs to deposit.
+		if (strcmp(cmds[3], "\0") != 0) {
+			printf("Usage: deposit <user-name> <amt>\n");
+		} else {
+			deposit(bank, cmds[1], cmds[2]);
+		}
 	} else if (strcmp(cmds[0], "balance") == 0) {
-		balance(bank, cmds[1]);
+		// Checking for extra inputs to balance.
+		if (strcmp(cmds[2], "\0") != 0) {
+			printf("Usage: balance <user-name>\n");
+		} else {
+			balance(bank, cmds[1]);
+		}
 	} else {
 		printf("Invalid command\n");
 	}
@@ -162,9 +123,9 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	FILE *fp;
 	//char personName[256];
 	char filename[256];
+	long long amount = strtol(balance, NULL, 10);
 	int user_pin = atoi(pin);
-	int user_bal = atoi(balance);
-	
+
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") ||
 		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
@@ -174,66 +135,55 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		return;
 	}
 
+	//printf("%lld\n", amount);
 	// Further checking the validity of inputs.
-	if (strlen(name) > 250 || user_pin < 0 || user_bal < 0 || user_bal > INT_MAX)	{
+	if (strlen(name) > 250 || user_pin < 0 || amount < 0 || (1 + amount) > INT_MAX || amount < INT_MIN)	{
 		printf("Usage: create-user <user-name> <pin> <balance>\n");
 		return;
 	}
 	
+	
 	// Checking if the user is already in the bank systems.
-	/*if (hash_table_find(bank->accounts, name) != NULL) {
-		printf("Error: user %s already exists\n", name);
-		return;
-	}*/
-
 	if (list_find(bank->nameBal, name) != NULL) {
 		printf("Error: user %s already exists\n", name);
 		return;
 	}
 
 	// Adding the user & data to the bank systems.
-	/*UserData *user = malloc(sizeof(UserData));
-	create_data(user, user_pin, user_bal);
-	//strcpy(personName, name);
-	hash_table_add(bank->accounts, name, user);*/
-
 	list_add(bank->namePin, name, pin);
 	list_add(bank->nameBal, name, balance);
 	
 	// Creating filename for user's .card file.
 	strcpy(filename, name);
 	strncat(filename, ".card", 5);
-	//printf("card filename: %s\n", filename);
 	// Creating the user's .card file.
 	if (!(fp = fopen(filename, "w+"))) {
 		printf("Error creating card file for user %s\n", name);
 		list_del(bank->nameBal, name);
 		list_del(bank->namePin, name);
-		/*hash_table_del(bank->accounts, name);
-		free(user);*/
 		return;
 	}
 
 	fprintf(fp, "%s,%s", pin, balance);
 	fclose(fp);
-	
+	printf("Created user %s\n", name);
 }
 
 void deposit(Bank *bank, char *name, char *amt) {
 	char *balPtr;
 	int bal;
 	char *balance = malloc(12);
-	int amount;
+	long long amount;
 	//UserData *user;
 
 	memset(balance, '\0', 12);
 	// Checking if the amount is larger than an int can hold.
-	if (atoi(amt) > INT_MAX) {
+	if ((amount = strtol(amt, NULL, 10)) > INT_MAX) {
 		printf("Usage: deposit <user-name> <amt>\n");
 		return;
 	}
 
-	amount = atoi(amt);
+	//amount = atoi(amt);
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
 		!reg_matches(amt, "[0-9]+") || amount < 0) {
@@ -255,6 +205,8 @@ void deposit(Bank *bank, char *name, char *amt) {
 	bal = atoi(balPtr);
 	// Making sure that the new balance cannot exceed the maximum int value.
 	//if ((user->balance + amount) > INT_MAX) {
+	//printf("%d\n", bal);
+	//printf("%d\n", INT_MAX);
 	if ((bal + amount) > INT_MAX) {
 		printf("Too rich for this program\n");
 		return;
@@ -272,7 +224,7 @@ void deposit(Bank *bank, char *name, char *amt) {
 
 	free(balance);
 	// Deposit successful.
-	printf("$%d added to %s's account\n", amount, name);	
+	printf("$%lld added to %s's account\n", amount, name);	
 }
 
 void balance(Bank *bank, char *name) {

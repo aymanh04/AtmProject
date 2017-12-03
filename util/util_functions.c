@@ -35,6 +35,151 @@ int bank_split_line(char *arr[], char *line) {
 	return 0;
 }
 
+int getKeyLen(int whichKey, int whichSys, char *path) {
+	FILE *fp;
+	char *sysPath;
+	char *type;
+	char *strptr;
+	char chr;
+	char num[6];
+	char line[256];
+	//size_t len;
+	int i = 0, ret = -1;
+
+
+	// Determining if its the bank or ATM.
+	if (whichSys == 0) {
+		// 0 -> Bank
+		sysPath = malloc(strlen(path) + 6); // + ".bank" & NULL
+		strncpy(sysPath, path, strlen(path));
+		fp = fopen(sysPath, "r");
+	} else if (whichSys == 1) {
+		// 1 -> ATM
+		sysPath = malloc(strlen(path) + 5); // + ".atm" & NULL
+		strncpy(sysPath, path, strlen(path));
+		fp = fopen(sysPath, "r");
+	} else {
+		return -1;
+	}
+
+	// Determining if its the public or private key.
+	if (whichKey == 0) {
+		// 0 -> Public
+		type = "Public Key Size:";
+	} else if (whichKey == 1) {
+		// 1 -> Private
+		type = "Private Key Size:";
+	}
+
+	while (fgets(line, sizeof(line), fp)) {
+		if ((strptr = strstr(line, type))) {
+			// Getting the digits of the length.
+			for (i = 0; i < 6; i++) {
+				// 17 is the index after the type string.
+				if (whichKey == 0) 
+					chr = strptr[17 + i];
+				else // 18 for Private Key
+					chr = strptr[18 + i];
+				
+				if (chr >= '0' && chr <= '9') {
+					num[i] = chr;
+				} else {
+					num[i] = '\0';
+					break;
+				}
+			}
+			
+			break;
+		}
+	}
+	ret = atoi(num);
+	return ret;
+}
+
+/* 
+Gets a public or private key from either the .bank or .atm init file.
+
+Params: whichKey 	- 0 or 1 for private or public key
+		whichSys 	- 0 or 1 for bank or atm
+		path 		- file path
+		keylen 		- key length
+*/
+char* getKey(int whichKey, int whichSys, char *path, int keylen) {
+	FILE *fp;
+	char *sysPath;
+	char *type;
+	char *strptr;
+	char chr;
+	//char num[6];
+	char line[512];
+	char *key = malloc(2048);
+	//size_t len;
+	int i = 0, cnt = 0;
+	regex_t regex;
+
+	if (!key)
+		return NULL;
+
+	// Determining if its the bank or ATM.
+	if (whichSys == 0) {
+		// 0 -> Bank
+		sysPath = malloc(strlen(path) + 6); // + ".bank" & NULL
+		strncpy(sysPath, path, strlen(path));
+		strcat(sysPath, ".bank\0");
+		fp = fopen(sysPath, "r");
+	} else if (whichSys == 1) {
+		// 1 -> ATM
+		sysPath = malloc(strlen(path) + 5); // + ".atm" & NULL
+		strncpy(sysPath, path, strlen(path));
+		strcat(sysPath, ".atm\0");
+		fp = fopen(sysPath, "r");
+	} else {
+		return NULL;
+	}
+
+	// Determining if its the public or private key.
+	if (whichKey == 0) {
+		// 0 -> Public
+		type = "Public:";
+		if (regcomp(&regex, "^Public:*\n$", 0)) {
+			// TODO: Error
+		}
+	} else if (whichKey == 1) {
+		// 1 -> Private
+		type = "Private:";
+		if (regcomp(&regex, "^Private:*\n$", 0)) {
+			// TODO: Error
+		}
+	}
+
+	while (fgets(line, sizeof(line), fp)) {
+		// Getting the starting position of the key and copying characters.
+		if ((cnt == 0) && (strptr = strstr(line, type)) != NULL) {
+			// Getting the digits of the length.
+			for (i = 0; i < (sizeof(line) - sizeof(type)) && i < keylen; i++) {
+				// 8 is the index after the type string.
+				if (whichKey == 0) 
+					chr = strptr[8 + i];
+				else // 9 for Private Key
+					chr = strptr[9 + i];
+				
+				key[i] = chr;
+				cnt++;
+			}
+		} else {
+			// Getting the rest of the key if it was too long to 
+			for (i = 0; i < sizeof(line); i++) {
+				if (cnt < keylen) {
+					key[cnt] = line[i];
+					cnt++;
+				}
+			}
+		}
+	}
+	key[cnt] = '\0';
+	return key;
+}
+
 
 bool reg_matches(const char *str, const char *pattern) {
     regex_t re;

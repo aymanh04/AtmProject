@@ -37,10 +37,11 @@ typedef struct _Bank {
 	List *nameBal;
 
 	HashTable *accounts;
+	FILE *file;
 
 } Bank;
 
-Bank* bank_create();
+Bank* bank_create(FILE *fp);
 void bank_free(Bank *bank);
 ssize_t bank_send(Bank *bank, char *data, size_t data_len);
 ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len);
