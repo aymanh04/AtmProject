@@ -199,14 +199,6 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	free(privKeyStrAtm);
 
 	// Do rest of init down here...
-
-
-	RSA *r = RSA_new();
-	r = PEM_read_RSA_PUBKEY(bankFile, &r, NULL, NULL);
-
-	BIO *bioPubBank2 = BIO_new_file("publicBankTest.pem", "w+");
-	PEM_write_bio_RSAPublicKey(bioPubBank2, r);
-	BIO_free_all(bioPubBank2);
 	return 1;
 }
 

@@ -222,8 +222,8 @@ RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
 
 
 int encryptMsg(RSA *rsa, char *msg, char *enc) {
-	int len = RSA_public_encrypt(strlen(msg)+1, (unsigned char*)msg,
-		(unsigned char*)enc, rsa, RSA_PKCS1_OAEP_PADDING);
+	int len = RSA_public_encrypt(strlen(msg), (unsigned char*)msg,
+		(unsigned char*)enc, rsa, RSA_PKCS1_PADDING);
 
 	return len;
 }
@@ -231,10 +231,64 @@ int encryptMsg(RSA *rsa, char *msg, char *enc) {
 
 void decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
 	RSA_private_decrypt(encLen, (unsigned char*)enc, (unsigned char*)msg,
-                       rsa, RSA_PKCS1_OAEP_PADDING);
+                       rsa, RSA_PKCS1_PADDING);
 }
 
 
+unsigned char *signMsg(RSA *rsa, char *msg, unsigned char *output) {
+	EVP_MD_CTX *ctx = NULL;
+	EVP_PKEY *pkey = EVP_PKEY_new();
+	size_t len;
+	unsigned char *sig;
+
+	EVP_PKEY_assign_RSA(pkey, rsa);
+
+	if (!(ctx = EVP_MD_CTX_create()))
+		return -1;
+ 
+	if (EVP_DigestSignInit(ctx, NULL, EVP_sha256(), NULL, pkey) != 1)
+		return -1;
+ 
+ 	if (EVP_DigestSignUpdate(ctx, msg, strlen(msg)) != 1)
+		return -1;
+ 
+	if (EVP_DigestSignFinal(ctx, NULL, &len) != 1)
+		return -1;
+
+ 	if (!(sig = OPENSSL_malloc(sizeof(unsigned char) * (len))))
+		return -1;
+
+	if (EVP_DigestSignFinal(ctx, sig, &len) != 1) 
+		return -1;
+ 
+	//output = sig;
+	EVP_MD_CTX_destroy(ctx);
+	return sig;
+}
+
+
+int verifySig(RSA *rsa, unsigned char *sig, char *msg) {
+	EVP_MD_CTX *ctx = NULL;
+	EVP_PKEY *pkey = EVP_PKEY_new();
+	size_t len;
+
+	EVP_PKEY_assign_RSA(pkey, rsa);
+
+	if (!(ctx = EVP_MD_CTX_create()))
+		return -1;
+
+	if (EVP_DigestVerifyInit(ctx, NULL, EVP_sha256(), NULL, pkey) != 1)
+		return -1;
+
+	/* Initialize `key` with a public key */
+	if (EVP_DigestVerifyUpdate(ctx, msg, strlen(msg)) != 1) 
+		return -1;
+
+	if (EVP_DigestVerifyFinal(ctx, sig, strlen(sig)) != 1)
+		return -1;
+	
+	return 1;
+}
 
 bool reg_matches(const char *str, const char *pattern) {
     regex_t re;

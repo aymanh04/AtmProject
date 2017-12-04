@@ -86,14 +86,14 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 	} else if (strcmp(cmds[0], "deposit") == 0) {
 		// Checking for extra inputs to deposit.
 		if (strcmp(cmds[3], "\0") != 0) {
-			printf("Usage: deposit <user-name> <amt>\n");
+			printf("Usage:\tdeposit <user-name> <amt>\n");
 		} else {
 			deposit(bank, cmds[1], cmds[2]);
 		}
 	} else if (strcmp(cmds[0], "balance") == 0) {
 		// Checking for extra inputs to balance.
 		if (strcmp(cmds[2], "\0") != 0) {
-			printf("Usage: balance <user-name>\n");
+			printf("Usage:\tbalance <user-name>\n");
 		} else {
 			balance(bank, cmds[1]);
 		}
@@ -138,21 +138,21 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
 		!reg_matches(balance, "[0-9]+")) {
 
-		printf("Usage: create-user <user-name> <pin> <balance>\n");
+		printf("Usage:\tcreate-user <user-name> <pin> <balance>\n");
 		return;
 	}
 
 	//printf("%lld\n", amount);
 	// Further checking the validity of inputs.
 	if (strlen(name) > 250 || user_pin < 0 || amount < 0 || (1 + amount) > INT_MAX || amount < INT_MIN)	{
-		printf("Usage: create-user <user-name> <pin> <balance>\n");
+		printf("Usage:\tcreate-user <user-name> <pin> <balance>\n");
 		return;
 	}
 	
 	
 	// Checking if the user is already in the bank systems.
 	if (list_find(bank->nameBal, name) != NULL) {
-		printf("Error: user %s already exists\n", name);
+		printf("Error:\tuser %s already exists\n", name);
 		return;
 	}
 
@@ -190,22 +190,43 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	RSA *r = RSA_new();
 	BIO *bioTemp = BIO_new_mem_buf((void*)pubKey, strlen(pubKey));
 	PEM_read_bio_RSAPublicKey(bioTemp, &r, NULL, NULL);*/
-	char *tmp = malloc(RSA_size(bank->pubAtm));
+	unsigned char *tmp = malloc(RSA_size(bank->pubAtm));
+	//memset(tmp, '\0', 256);
 	int length = encryptMsg(bank->pubAtm, pin, tmp);
+	
+	printf("%d\n", length);
 	//printf("encrypted: %s\n", tmp);
 
-	RSA *r = retrieveKey(1, 1, "./test.atm");
-	char *tmp2 = malloc(RSA_size(r));
+	RSA *r2 = retrieveKey(1, 1, "./test.atm");
+	RSA *r = retrieveKey(0, 1, "./test.atm");
+	unsigned char *tmp2 = malloc(RSA_size(r2));
 	//memset(tmp2, '\0', 256);
 	
-	decryptMsg(r, tmp, tmp2, length);
-	printf("decrypted: %s\n", tmp2);
+	//decryptMsg(r2, tmp, tmp2, length);
+	//printf("decrypted: %s\n", tmp2);
+
+	unsigned char *out = signMsg(bank->privBank, tmp, out);
+	if (!out)
+		printf("signing failed.\n");
+	else
+		printf("Sign success.\n");
+
+	if (verifySig(r, out, tmp))
+		printf("Success\n");
+	else
+		printf("Failed.\n");
 
 	/*BIO *bioTemp = BIO_new_mem_buf((void*)tmp, strlen(tmp));
 	BIO *bioPubBank = BIO_new_file("publicBankTest.pem", "w+");
 	PEM_write_bio_RSAPrivateKey(bioPubBank, r, NULL, NULL, 0, NULL, NULL);
 	BIO_free_all(bioPubBank);*/
 	fprintf(fp, "%s", tmp);
+	char *tmp3 = malloc(256);
+	//memset(tmp3, '\0', 256);
+	fgets(tmp3, 256, fp);
+	tmp2 = decryptMsg(r2, tmp3, tmp2, 256);
+	printf("decrypted: %s\n", tmp2);
+
 	fclose(fp);
 	printf("Created user %s\n", name);
 }
@@ -220,7 +241,7 @@ void deposit(Bank *bank, char *name, char *amt) {
 	memset(balance, '\0', 12);
 	// Checking if the amount is larger than an int can hold.
 	if ((amount = strtol(amt, NULL, 10)) > INT_MAX) {
-		printf("Usage: deposit <user-name> <amt>\n");
+		printf("Usage:\tdeposit <user-name> <amt>\n");
 		return;
 	}
 
@@ -229,7 +250,7 @@ void deposit(Bank *bank, char *name, char *amt) {
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
 		!reg_matches(amt, "[0-9]+") || amount < 0) {
 
-		printf("Usage: deposit <user-name> <amt>\n");
+		printf("Usage:\tdeposit <user-name> <amt>\n");
 		return;
 	}
 
@@ -275,7 +296,7 @@ void balance(Bank *bank, char *name) {
 	//const char* username = name;
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250) {
-		printf("Usage: balance <user-name>\n");
+		printf("Usage:\tbalance <user-name>\n");
 		return;
 	}
 

@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	char atmName[255];
 	// Only a single argument is allowed for this function.
 	if (argc != 2) {
-		printf("Usage: init <filename>\n");
+		printf("Usage:\tinit <filename>\n");
 		return 62;
 	}
 
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
 	atmFile = fopen(atmName, "r+");
 	// If either of the files exists, return.
 	if (bankFile || atmFile) {
-		printf("Error: one of the files already exists\n");
+		printf("Error:\tone of the files already exists\n");
 		return 63;
 	}
 

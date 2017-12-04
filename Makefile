@@ -5,7 +5,7 @@ SSL = -I /usr/local/ssl/include -L /usr/local/ssl/lib -lssl -lcrypto -ldl -lm
 all: bin/atm bin/bank bin/router bin/init
 
 bin/atm : atm/atm-main.c atm/atm.c
-	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm
+	${CC} ${CFLAGS} atm/atm.c atm/atm-main.c -o bin/atm ${SSL}
 
 bin/bank : bank/bank-main.c bank/bank.c
 	${CC} ${CFLAGS} util/util_functions.c bank/bank.c bank/bank-main.c -o bin/bank ${SSL}
