@@ -87,7 +87,7 @@ void list_del(List *list, const char *key)
             list->size--;
 
 			free(curr->key);
-			free(curr->bal);
+			free(curr->val);
             free(curr);
             return;
         }

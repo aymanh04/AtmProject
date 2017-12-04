@@ -54,6 +54,10 @@ Bank* bank_create(FILE *fp, char *fname) {
 void bank_free(Bank *bank) {
     if(bank != NULL) {
         close(bank->sockfd);
+		list_free(bank->namePin);
+		list_free(bank->nameBal);
+		RSA_free(bank->pubAtm);
+		RSA_free(bank->privBank);
         free(bank);
     }
 }

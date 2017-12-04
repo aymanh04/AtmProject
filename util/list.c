@@ -20,6 +20,8 @@ void list_free(List *list)
         while(curr != NULL)
         {
             next = curr->next;
+			free(curr->key);
+			free(curr->val);
             free(curr);
             curr = next;
         }
