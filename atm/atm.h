@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <openssl/rsa.h>
 
 typedef struct _ATM
 {
@@ -27,6 +28,10 @@ typedef struct _ATM
     // Protocol state
     char* user;
     bool logged;
+	char *fname;
+	FILE *file;
+	RSA *pubBank;
+	RSA *privATM;
 } ATM;
 
 ATM* atm_create();
