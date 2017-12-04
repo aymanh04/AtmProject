@@ -108,21 +108,96 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
     // TODO: Implement the bank side of the ATM-bank protocol
 
-	/*
-	 * The following is a toy example that simply receives a
-	 * string from the ATM, prepends "Bank got: " and echoes 
-	 * it back to the ATM before printing it to stdout.
-	 */
+  char sendline[1000];
+  int i = 0;
+	char *cmds[3];
+  int status = 0;
+	for (i = 0; i < 3; i++) {
+		cmds[i] = malloc(251);
+		memset(cmds[i], '\0', 251);
+	}
 
-	
-	/*
-    char sendline[1000];
-    command[len]=0;
-    sprintf(sendline, "Bank got: %s", command);
+	sscanf(command, "%s %s %s", cmds[0], cmds[1], cmds[2]);
+
+	if (strcmp(cmds[0], "isUser") == 0) {
+		status =  isUser(bank, cmds[1]);
+    sprintf(sendline, "%d",status);
     bank_send(bank, sendline, strlen(sendline));
-    printf("Received the following:\n");
-    fputs(command, stdout);
-	*/
+	} else if (strcmp(cmds[0], "withdraw") == 0) {
+		status = withdraw(bank, cmds[1], cmds[2]);
+    sprintf(sendline, "%d",status);
+    bank_send(bank, sendline, strlen(sendline));
+	} else if (strcmp(cmds[0], "balance") == 0) {
+		status = atmBalance(bank, cmds[1]);
+    sprintf(sendline, "%d",status);
+    bank_send(bank, sendline, strlen(sendline));
+	} else {
+    sprintf(sendline, "Error");
+    bank_send(bank, sendline, strlen(sendline));
+	}
+	for (i = 0; i < 3; i++) {
+		free(cmds[i]);
+	}
+}
+
+int isUser(Bank* bank, char *name){
+  char *balPtr;
+  balPtr = (char*) list_find(bank->nameBal, name)
+  if(!balPtr){
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int withdraw(Bank *bank,char *name,char* amt){
+  char *balPtr;
+	int bal;
+	char *balance = malloc(12);
+	long long amount;
+
+	memset(balance, '\0', 12);
+  amount = strtol(amt, NULL, 10)
+
+	// Checking if the user is already in the bank systems.
+	//user = hash_table_find(bank->accounts, name);
+	balPtr = (char*)list_find(bank->nameBal, name);
+	if (!balPtr) {
+		return -1;
+	}
+
+	bal = atoi(balPtr);
+	// Making sure that the new balance cannot exceed the maximum int value.
+	//if ((user->balance + amount) > INT_MAX) {
+	//printf("%d\n", bal);
+	//printf("%d\n", INT_MAX);
+	if ((bal - amount) < 0) {
+		return 0;
+	}
+
+	// Deleting the old entry and replacing with the new.
+	bal -= amount;
+	sprintf(balance, "%d", bal);
+
+	list_del(bank->nameBal, name);
+	list_add(bank->nameBal, name, balance);
+
+	free(balance);
+	// Deposit successful.
+	return 1;
+}
+
+int atmBalance(Bank *bank, char *name) {
+	//UserData *user;
+	char *balPtr;
+	int bal;
+
+	balPtr = (char*) list_find(bank->nameBal, name);
+	if (!balPtr) {
+		return 0;
+	}
+	// Printing user's balance.
+	return balPtr;
 }
 
 // Creates a user entry in the bank, along with a card for the user to use at the ATM.
