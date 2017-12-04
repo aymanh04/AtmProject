@@ -202,7 +202,6 @@ int atmBalance(Bank *bank, char *name) {
 // Creates a user entry in the bank, along with a card for the user to use at the ATM.
 void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	FILE *fp;
-	//char personName[256];
 	char filename[256];
 	long long amount = strtol(balance, NULL, 10);
 	int user_pin = atoi(pin);
@@ -216,7 +215,6 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		return;
 	}
 
-	//printf("%lld\n", amount);
 	// Further checking the validity of inputs.
 	if (strlen(name) > 250 || user_pin < 0 || amount < 0 || (1 + amount) > INT_MAX || amount < INT_MIN)	{
 		printf("Usage:\tcreate-user <user-name> <pin> <balance>\n");
@@ -245,70 +243,25 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		return;
 	}
 
-	/*int keylen = getKeyLen(0, 0, bank->fname);
-	printf("pubkey keylen: %d\n", keylen);
-	char *pubKey = malloc(keylen + 1);
-	memset(pubKey, '\0', keylen + 1);
-	getKey(0, 0, bank->fname, pubKey, keylen);
-	printf("Public Key: %s\n", pubKey);
-	//free(pubKey);
-
-	keylen = getKeyLen(1, 0, bank->fname);
-	printf("privkey keylen: %d\n", keylen);
-	char *privKey = malloc(keylen + 1);
-	memset(privKey, '\0', keylen + 1);
-	getKey(1, 0, bank->fname, privKey, keylen);
-	printf("Private Key: %s\n", privKey);
-	//free(privKey);
-
-	RSA *r = RSA_new();
-	BIO *bioTemp = BIO_new_mem_buf((void*)pubKey, strlen(pubKey));
-	PEM_read_bio_RSAPublicKey(bioTemp, &r, NULL, NULL);*/
 	unsigned char *tmp = malloc(RSA_size(bank->pubAtm));
-	//memset(tmp, '\0', 256);
 	int length = encryptMsg(bank->pubAtm, pin, tmp);
-	
-	printf("%d\n", length);
-	//printf("encrypted: %s\n", tmp);
-
-	RSA *r2 = retrieveKey(1, 1, "./test.atm");
-	RSA *r = retrieveKey(0, 1, "./test.atm");
-	unsigned char *tmp2 = malloc(RSA_size(r2));
-	//memset(tmp2, '\0', 256);
-	
-	//decryptMsg(r2, tmp, tmp2, length);
-	//printf("decrypted: %s\n", tmp2);
-
-	unsigned char *out = signMsg(bank->privBank, tmp, out);
-	if (!out)
-		printf("signing failed.\n");
-	else
-		printf("Sign success.\n");
-
-	if (verifySig(r, out, tmp))
-		printf("Success\n");
-	else
-		printf("Failed.\n");
-
-	/*BIO *bioTemp = BIO_new_mem_buf((void*)tmp, strlen(tmp));
-	BIO *bioPubBank = BIO_new_file("publicBankTest.pem", "w+");
-	PEM_write_bio_RSAPrivateKey(bioPubBank, r, NULL, NULL, 0, NULL, NULL);
-	BIO_free_all(bioPubBank);*/
+	/*RSA *r2 = retrieveKey(1, 1, "./test1.atm");
+	RSA *r = retrieveKey(0, 1, "./test1.atm");
+	unsigned char *tmp2 = malloc(RSA_size(r2));*/
 	fwrite(tmp, 1, 256, fp);
 	fclose(fp);
-	//fp = fopen(filename, "r");
-
-
-//Use this to decrypt in ATM
-	char *tmp3 = malloc(RSA_size(r2));
-	//memset(tmp3, '\0', 256);
-	fread(tmp3, 1, 256, fp);
-	decryptMsg(r2, tmp3, tmp2, 256);
-	//printf("decrypted: %s\n", tmp2);
-
 	
 
+//Use this to decrypt in ATM
+	/*char *tmp3 = malloc(RSA_size(r2));
+	//memset(tmp3, '\0', 256);
+	fp = fopen(filename, "r");
+	fread(tmp3, 1, 256, fp);
+	decryptMsg(r2, tmp3, tmp2, 256);
+	
+	printf("decrypted: %s\n", tmp2);*/
 
+	
 	printf("Created user %s\n", name);
 	free(tmp3);
 	free(tmp2);
@@ -320,7 +273,6 @@ void deposit(Bank *bank, char *name, char *amt) {
 	int bal;
 	char *balance = malloc(12);
 	long long amount;
-	//UserData *user;
 
 	memset(balance, '\0', 12);
 	// Checking if the amount is larger than an int can hold.
@@ -329,7 +281,6 @@ void deposit(Bank *bank, char *name, char *amt) {
 		return;
 	}
 
-	//amount = atoi(amt);
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
 		!reg_matches(amt, "[0-9]+") || amount < 0) {
@@ -337,11 +288,8 @@ void deposit(Bank *bank, char *name, char *amt) {
 		printf("Usage:\tdeposit <user-name> <amt>\n");
 		return;
 	}
-
-	//printf("%s\n", name);
 	
 	// Checking if the user is already in the bank systems.
-	//user = hash_table_find(bank->accounts, name);
 	balPtr = (char*)list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
@@ -350,9 +298,6 @@ void deposit(Bank *bank, char *name, char *amt) {
 
 	bal = atoi(balPtr);
 	// Making sure that the new balance cannot exceed the maximum int value.
-	//if ((user->balance + amount) > INT_MAX) {
-	//printf("%d\n", bal);
-	//printf("%d\n", INT_MAX);
 	if ((bal + amount) > INT_MAX) {
 		printf("Too rich for this program\n");
 		return;
@@ -361,10 +306,6 @@ void deposit(Bank *bank, char *name, char *amt) {
 	// Deleting the old entry and replacing with the new.
 	bal += amount;
 	sprintf(balance, "%d", bal);
-
-	//user->balance = bal;
-	//hash_table_del(bank->accounts, name);
-	//hash_table_add(bank->accounts, name, user);
 	list_del(bank->nameBal, name);
 	list_add(bank->nameBal, name, balance);	
 
@@ -374,10 +315,9 @@ void deposit(Bank *bank, char *name, char *amt) {
 }
 
 void balance(Bank *bank, char *name) {
-	//UserData *user;
 	char *balPtr;
 	int bal;
-	//const char* username = name;
+
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250) {
 		printf("Usage:\tbalance <user-name>\n");
@@ -385,18 +325,12 @@ void balance(Bank *bank, char *name) {
 	}
 
 	// Checking if the user is already in the bank systems.
-	/*user = (UserData*)hash_table_find(bank->accounts, name);
-	if (!user) {
-		printf("No such user\n");
-		return;
-	}*/
-
 	balPtr = (char*) list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
 		return;
 	}
-	//bal = atoi(user->balance);
+
 	bal = atoi(balPtr);
 	// Printing user's balance.
 	printf("$%d\n", bal);

@@ -222,7 +222,7 @@ RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
 
 
 int encryptMsg(RSA *rsa, char *msg, char *enc) {
-	int len = RSA_public_encrypt(strlen(msg), (unsigned char*)msg,
+	int len = RSA_public_encrypt(strlen(msg) + 1, (unsigned char*)msg,
 		(unsigned char*)enc, rsa, RSA_PKCS1_OAEP_PADDING);
 
 	return len;
@@ -244,22 +244,22 @@ unsigned char *signMsg(RSA *rsa, char *msg, unsigned char *output) {
 	EVP_PKEY_assign_RSA(pkey, rsa);
 
 	if (!(ctx = EVP_MD_CTX_create()))
-		return -1;
+		return NULL;
  
 	if (EVP_DigestSignInit(ctx, NULL, EVP_sha256(), NULL, pkey) != 1)
-		return -1;
+		return NULL;
  
  	if (EVP_DigestSignUpdate(ctx, msg, strlen(msg)) != 1)
-		return -1;
+		return NULL;
  
 	if (EVP_DigestSignFinal(ctx, NULL, &len) != 1)
-		return -1;
+		return NULL;
 
  	if (!(sig = OPENSSL_malloc(sizeof(unsigned char) * (len))))
-		return -1;
+		return NULL;
 
 	if (EVP_DigestSignFinal(ctx, sig, &len) != 1) 
-		return -1;
+		return NULL;
  
 	//output = sig;
 	EVP_MD_CTX_destroy(ctx);
@@ -270,7 +270,6 @@ unsigned char *signMsg(RSA *rsa, char *msg, unsigned char *output) {
 int verifySig(RSA *rsa, unsigned char *sig, char *msg) {
 	EVP_MD_CTX *ctx = NULL;
 	EVP_PKEY *pkey = EVP_PKEY_new();
-	size_t len;
 
 	EVP_PKEY_assign_RSA(pkey, rsa);
 
