@@ -48,20 +48,14 @@ int getKeyLen(int whichKey, int whichSys, char *path) {
 	char chr;
 	char num[6];
 	char line[256];
-	//size_t len;
 	int i = 0, ret = -1;
-
 
 	// Determining if its the bank or ATM.
 	if (whichSys == 0) {
 		// 0 -> Bank
-		//sysPath = malloc(strlen(path) + 6); // + ".bank" & NULL
-		//strncpy(sysPath, path, strlen(path));
 		fp = fopen(path, "r");
 	} else if (whichSys == 1) {
 		// 1 -> ATM
-		//sysPath = malloc(strlen(path) + 5); // + ".atm" & NULL
-		//strncpy(sysPath, path, strlen(path));
 		fp = fopen(path, "r");
 	} else {
 		return -1;
@@ -112,15 +106,10 @@ Params: whichKey 	- 0 or 1 for private or public key
 */
 char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 	FILE *fp;
-	//char *sysPath;
 	char *type;
 	char *strptr;
-	//char num[6];
 	char *line = malloc(512);
-	//char *key = malloc(keylen);
-	//size_t len;
 	int cnt = 0;
-	//regex_t regex;
 
 	memset(line, '\0', 512);
 	if (!key)
@@ -129,15 +118,9 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 	// Determining if its the bank or ATM.
 	if (whichSys == 0) {
 		// 0 -> Bank
-		//sysPath = malloc(strlen(path) + 6); // + ".bank" & NULL
-		//strncpy(sysPath, path, strlen(path));
-		//strcat(sysPath, ".bank\0");
 		fp = fopen(path, "r");
 	} else if (whichSys == 1) {
 		// 1 -> ATM
-		//sysPath = malloc(strlen(path) + 5); // + ".atm" & NULL
-		//strncpy(sysPath, path, strlen(path));
-		//strcat(sysPath, ".atm\0");
 		fp = fopen(path, "r");
 	} else {
 		return NULL;
@@ -147,38 +130,30 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 	if (whichKey == 0) {
 		// 0 -> Public
 		type = "Public:";
-		/*if (regcomp(&regex, "^Public:*\n$", 0)) {
-			// TODO: Error
-		}*/
 	} else if (whichKey == 1) {
 		// 1 -> Private
 		type = "Private:";
-		/*if (regcomp(&regex, "^Private:*\n$", 0)) {
-			// TODO: Error
-		}*/
 	}
 
 
 	while (fgets(line, 512, fp)) {
 		// Getting the starting position of the key and copying characters.
-		//printf("line: %s\n", line);
 		if ((strptr = strstr(line, type)) != NULL) {
 			// Getting the digits of the length.	
 			if (whichKey == 0) 
 				strptr += 8;
 			else // 9 for Private Key
 				strptr += 9;
-			//printf("%s\n", strptr);
+
 			strncpy(key, strptr, strlen(line) - strlen(type));
 			cnt += (int) (strlen(line) - strlen(type));
 		} else {
 			if (cnt > 0) {
-				// Getting the rest of the key if it was too long to 
+				// Getting the rest of the key if it was too long
 				if (cnt + (int)strlen(line) > keylen) {
 					strncat(key, line, (keylen - cnt));
 					cnt += keylen - cnt;
 				} else {
-					//printf("%s\n", line);
 					strcat(key, line);
 					cnt += strlen(line);
 				}
@@ -188,7 +163,6 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 		
 	}
 	fclose(fp);
-	//free(line);
 	key[cnt] = '\0';
 	return key;
 }
@@ -201,14 +175,6 @@ RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
 	pubKey = malloc(keylen + 1);
 	memset(pubKey, '\0', keylen + 1);
 	getKey(whichKey, whichSys, fname, pubKey, keylen);
-
-	/*keylen = getKeyLen(1, 0, fname);
-	printf("privkey keylen: %d\n", keylen);
-	privKey = malloc(keylen + 1);
-	memset(privKey, '\0', keylen + 1);
-	getKey(1, 0, bank->fname, privKey, keylen);
-	printf("Private Key: %s\n", privKey);
-	//free(privKey);*/
 
 	RSA *r = RSA_new();
 	BIO *bioTemp = BIO_new_mem_buf((void*)pubKey, strlen(pubKey));	
@@ -235,7 +201,7 @@ void decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
 }
 
 
-unsigned char *signMsg(RSA *rsa, char *msg, unsigned char *output) {
+unsigned char *signMsg(RSA *rsa, char *msg) {
 	EVP_MD_CTX *ctx = NULL;
 	EVP_PKEY *pkey = EVP_PKEY_new();
 	size_t len;

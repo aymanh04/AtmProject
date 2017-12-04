@@ -62,8 +62,6 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len) {
 }
 
 void atm_process_command(ATM *atm, char *command) {
-    // TODO: Implement the ATM's side of the ATM-bank protocol
-
     int i =0;
     char *cmds[2];
     for (i = 0; i < 2; i++) {
@@ -111,11 +109,14 @@ void begin_session(char *data, ATM *atm){
     strcpy(isuser,"isUser ");
     strcat(isuser,data);
 
-	//printf("%s %d",isuser,strlen(isuser));
-    atm_send(atm, isuser, strlen(isuser));
+	//unsigned char *tmp = malloc(RSA_size(atm->pubBank));
+	//encryptMsg(atm->pubBank, isuser, tmp);
+
+    //atm_send(atm, tmp, strlen(tmp));
+	atm_send(atm, isuser, strlen(isuser));
     n = atm_recv(atm,recvline,10000);
-    recvline[n] = 0;
-    if(strcmp(recvline,"0") == 0){
+    recvline[n] =0;
+    if(strcmp(recvline,"0") ==0){
     	printf("No such user\n");
 		free(isuser);
 		memset(recvline, '\0', 10000);
@@ -137,25 +138,20 @@ void begin_session(char *data, ATM *atm){
     if(!fp){
         printf("Unable to access %s\'s card\n",data);
     } else {
-		//fgets(inputLine,256,fp);
 		char *tmp2 = malloc(RSA_size(atm->privATM));
-		//printf(inputLine);
 		char *tmp3 = malloc(RSA_size(atm->privATM));
 
     	fread(tmp3, 1, 256, fp);
     	decryptMsg(atm->privATM, tmp3, tmp2, 256);
-    	printf("decrypted: %s\n", tmp2);
+		strcat(tmp2,"\n");
 
 		printf("PIN? ");
 		fgets(pin,256,stdin);
 
-		if(reg_matches(pin, "[0-9][0-9][0-9][0-9]")) {
-			printf("matched\n");
-			if (strstr(pin,tmp2) == 0) {
-				printf("Authorized\n");
-				strncpy(atm->user,data,strlen(data));
-				atm->logged = true;
-			}
+		if(reg_matches(pin, "[0-9][0-9][0-9][0-9]") && strncmp(pin,tmp2,4) == 0) {
+			printf("Authorized\n");
+		    strncpy(atm->user,data,strlen(data));
+			atm->logged = true;
 		} else {
 		    printf("Not authorized\n");
 		}
@@ -190,6 +186,8 @@ void withdraw(char *amt, ATM *atm){
     strcat(withdraw," ");
     strcat(withdraw,amount);
 
+	
+
     atm_send(atm, withdraw, strlen(withdraw));
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
@@ -212,7 +210,6 @@ void balance(ATM *atm){
   	char *balance = malloc(strlen("balance ")+strlen(atm->user));
  	strcpy(balance,"balance ");
  	strcat(balance,atm->user);
-	printf("%s : %s",atm->user,balance);
 
   	atm_send(atm, balance, strlen(balance));
  	n = atm_recv(atm,recvline,10000);

@@ -62,8 +62,6 @@ ssize_t atm_recv(ATM *atm, char *data, size_t max_data_len) {
 }
 
 void atm_process_command(ATM *atm, char *command) {
-    // TODO: Implement the ATM's side of the ATM-bank protocol
-
     int i =0;
     char *cmds[2];
     for (i = 0; i < 2; i++) {
@@ -187,8 +185,6 @@ void withdraw(char *amt, ATM *atm){
     strcat(withdraw,atm->user);
     strcat(withdraw," ");
     strcat(withdraw,amount);
-
-	
 
     atm_send(atm, withdraw, strlen(withdraw));
     n = atm_recv(atm,recvline,10000);

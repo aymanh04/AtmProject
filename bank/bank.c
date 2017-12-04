@@ -37,11 +37,6 @@ Bank* bank_create(FILE *fp, char *fname) {
     bind(bank->sockfd,(struct sockaddr *)&bank->bank_addr,sizeof(bank->bank_addr));
 
     // Set up the protocol state
-    // TODO set up more, as needed
-
-	//bank->namePin = hash_table_create(10);
-	//bank->nameBal = hash_table_create(10);
-
 	bank->namePin = list_create();
 	bank->nameBal =	list_create();
 	bank->fname = fname;
@@ -74,7 +69,6 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 }
 
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
-    // TODO: Implement the bank's local commands
 	int i = 0;	
 	char *cmds[4];
 
@@ -110,7 +104,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
-    // TODO: Implement the bank side of the ATM-bank protocol
   	char sendline[1000];
   	int i = 0;
 	char *cmds[3];
@@ -218,7 +211,6 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	if (!reg_matches(name, "[a-zA-Z]+") ||
 		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
 		!reg_matches(balance, "[0-9]+")) {
-
 		printf("Usage:\tcreate-user <user-name> <pin> <balance>\n");
 		return;
 	}
@@ -253,26 +245,10 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 
 	unsigned char *tmp = malloc(RSA_size(bank->pubAtm));
 	int length = encryptMsg(bank->pubAtm, pin, tmp);
-	/*RSA *r2 = retrieveKey(1, 1, "./test1.atm");
-	RSA *r = retrieveKey(0, 1, "./test1.atm");
-	unsigned char *tmp2 = malloc(RSA_size(r2));*/
 	fwrite(tmp, 1, 256, fp);
 	fclose(fp);
 	
-
-//Use this to decrypt in ATM
-	/*char *tmp3 = malloc(RSA_size(r2));
-	//memset(tmp3, '\0', 256);
-	fp = fopen(filename, "r");
-	fread(tmp3, 1, 256, fp);
-	decryptMsg(r2, tmp3, tmp2, 256);
-	
-	printf("decrypted: %s\n", tmp2);*/
-
-	
 	printf("Created user %s\n", name);
-	//free(tmp3);
-	//free(tmp2);
 	free(tmp);
 }
 
@@ -292,7 +268,6 @@ void deposit(Bank *bank, char *name, char *amt) {
 	// Checking the formatting of inputs for validity.
 	if (!reg_matches(name, "[a-zA-Z]+") || strlen(name) > 250 ||
 		!reg_matches(amt, "[0-9]+") || amount < 0) {
-
 		printf("Usage:\tdeposit <user-name> <amt>\n");
 		return;
 	}

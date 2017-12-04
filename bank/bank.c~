@@ -37,11 +37,6 @@ Bank* bank_create(FILE *fp, char *fname) {
     bind(bank->sockfd,(struct sockaddr *)&bank->bank_addr,sizeof(bank->bank_addr));
 
     // Set up the protocol state
-    // TODO set up more, as needed
-
-	//bank->namePin = hash_table_create(10);
-	//bank->nameBal = hash_table_create(10);
-
 	bank->namePin = list_create();
 	bank->nameBal =	list_create();
 	bank->fname = fname;
@@ -55,7 +50,9 @@ void bank_free(Bank *bank) {
     if(bank != NULL) {
         close(bank->sockfd);
 		list_free(bank->namePin);
-		list_free(bank->nameBal);
+ 		list_free(bank->nameBal);
+ 		RSA_free(bank->pubAtm);
+ 		RSA_free(bank->privBank);
         free(bank);
     }
 }
@@ -72,7 +69,6 @@ ssize_t bank_recv(Bank *bank, char *data, size_t max_data_len) {
 }
 
 void bank_process_local_command(Bank *bank, char *command, size_t len) {
-    // TODO: Implement the bank's local commands
 	int i = 0;	
 	char *cmds[4];
 
@@ -108,7 +104,6 @@ void bank_process_local_command(Bank *bank, char *command, size_t len) {
 }
 
 void bank_process_remote_command(Bank *bank, char *command, size_t len) {
-    // TODO: Implement the bank side of the ATM-bank protocol
   	char sendline[1000];
   	int i = 0;
 	char *cmds[3];
@@ -117,11 +112,17 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 		cmds[i] = malloc(251);
 		memset(cmds[i], '\0', 251);
 	}
+	//char *tmp2 = malloc(RSA_size(bank->privBank));
+	//char *tmp3 = malloc(len);
+	//memset(tmp3, '\0', len);
+	//strcpy(tmp3,command);
 
+    //decryptMsg(bank->privBank, tmp3, tmp2, RSA_size(bank->privBank));
+
+	//printf("%s\n",tmp2);
 	sscanf(command, "%s %s %s", cmds[0], cmds[1], cmds[2]);
 	memset(sendline, '\0', 1000);
 	if (strcmp(cmds[0], "isUser") == 0) {
-		printf("Got : %s %s\n",cmds[1],cmds[2]);
 		status =  exists(bank, cmds[1]);
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
@@ -130,12 +131,11 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
 	} else if (strcmp(cmds[0], "balance") == 0) {
-		printf("Got : %s %s\n",cmds[1],cmds[2]);
 		status = atmBalance(bank, cmds[1]);
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
 	} else {
-    	sprintf(sendline, "Error");
+    	sprintf(sendline, "0");
     	bank_send(bank, sendline, strlen(sendline));
 	}
 	memset(sendline, '\0', 1000);
@@ -160,6 +160,9 @@ int withdraw(Bank *bank,char *name,char* amt){
 	memset(balance, '\0', 12);
     amount = strtol(amt, NULL, 10);
 	
+	if (strlen(name) > 250 || amount < 0 || (1 + amount) > INT_MAX || amount < INT_MIN )	{
+		return 0;
+	}
 	if(list_find(bank->nameBal, name) == NULL){
 		free(balance);
    		return 0;
@@ -169,7 +172,7 @@ int withdraw(Bank *bank,char *name,char* amt){
 	bal = atoi(balPtr);
 
 	// Making sure that the new balance cannot be zero.
-	if ((bal - amount) < 0) {
+	if ((bal - amount) < 0 && (bal - amount) < INT_MAX) {
 		free(balance);
 		return 0;
 	}
@@ -188,7 +191,6 @@ int withdraw(Bank *bank,char *name,char* amt){
 
 int atmBalance(Bank *bank, char *name) {
 	char *balPtr;
-	printf("%s",name);
 	balPtr = (char*) list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
@@ -209,7 +211,6 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	if (!reg_matches(name, "[a-zA-Z]+") ||
 		!reg_matches(pin, "[0-9][0-9][0-9][0-9]") ||
 		!reg_matches(balance, "[0-9]+")) {
-
 		printf("Usage:\tcreate-user <user-name> <pin> <balance>\n");
 		return;
 	}
@@ -244,26 +245,10 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 
 	unsigned char *tmp = malloc(RSA_size(bank->pubAtm));
 	int length = encryptMsg(bank->pubAtm, pin, tmp);
-	/*RSA *r2 = retrieveKey(1, 1, "./test1.atm");
-	RSA *r = retrieveKey(0, 1, "./test1.atm");
-	unsigned char *tmp2 = malloc(RSA_size(r2));*/
 	fwrite(tmp, 1, 256, fp);
 	fclose(fp);
 	
-
-//Use this to decrypt in ATM
-	/*char *tmp3 = malloc(RSA_size(r2));
-	//memset(tmp3, '\0', 256);
-	fp = fopen(filename, "r");
-	fread(tmp3, 1, 256, fp);
-	decryptMsg(r2, tmp3, tmp2, 256);
-	
-	printf("decrypted: %s\n", tmp2);*/
-
-	
 	printf("Created user %s\n", name);
-	//free(tmp3);
-	//free(tmp2);
 	free(tmp);
 }
 
@@ -334,4 +319,3 @@ void balance(Bank *bank, char *name) {
 	// Printing user's balance.
 	printf("$%d\n", bal);
 }
-

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -fno-stack-protector -z execstack -Wall -Iutil -Iatm -Ibank -Irouter -I.
+CFLAGS = -w -g -fno-stack-protector -z execstack -Wall -Iutil -Iatm -Ibank -Irouter -I.
 SSL = -I /usr/local/ssl/include -L /usr/local/ssl/lib -lssl -lcrypto -ldl -lm
 
 all: bin/atm bin/bank bin/router bin/init
@@ -21,4 +21,4 @@ test : util/list.c util/list_example.c util/hash_table.c util/hash_table_example
 	${CC} ${CFLAGS} util/list.c util/hash_table.c util/hash_table_example.c -o bin/hash-table-test
 
 clean:
-	cd bin && rm -f atm bank router list-test hash-table-test
+	cd bin && rm -f atm bank router init list-test hash-table-test *.card *.bank *.atm
