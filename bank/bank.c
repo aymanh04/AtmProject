@@ -119,7 +119,14 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 		cmds[i] = malloc(251);
 		memset(cmds[i], '\0', 251);
 	}
+	//char *tmp2 = malloc(RSA_size(bank->privBank));
+	//char *tmp3 = malloc(len);
+	//memset(tmp3, '\0', len);
+	//strcpy(tmp3,command);
 
+    //decryptMsg(bank->privBank, tmp3, tmp2, RSA_size(bank->privBank));
+
+	//printf("%s\n",tmp2);
 	sscanf(command, "%s %s %s", cmds[0], cmds[1], cmds[2]);
 	memset(sendline, '\0', 1000);
 	if (strcmp(cmds[0], "isUser") == 0) {
@@ -135,7 +142,7 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
 	} else {
-    	sprintf(sendline, "Error");
+    	sprintf(sendline, "0");
     	bank_send(bank, sendline, strlen(sendline));
 	}
 	memset(sendline, '\0', 1000);
@@ -160,6 +167,9 @@ int withdraw(Bank *bank,char *name,char* amt){
 	memset(balance, '\0', 12);
     amount = strtol(amt, NULL, 10);
 	
+	if (strlen(name) > 250 || amount < 0 || (1 + amount) > INT_MAX || amount < INT_MIN )	{
+		return 0;
+	}
 	if(list_find(bank->nameBal, name) == NULL){
 		free(balance);
    		return 0;
@@ -169,7 +179,7 @@ int withdraw(Bank *bank,char *name,char* amt){
 	bal = atoi(balPtr);
 
 	// Making sure that the new balance cannot be zero.
-	if ((bal - amount) < 0) {
+	if ((bal - amount) < 0 && (bal - amount) < INT_MAX) {
 		free(balance);
 		return 0;
 	}
