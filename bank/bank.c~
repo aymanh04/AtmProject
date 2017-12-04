@@ -260,8 +260,8 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 
 	
 	printf("Created user %s\n", name);
-	free(tmp3);
-	free(tmp2);
+	//free(tmp3);
+	//free(tmp2);
 	free(tmp);
 }
 

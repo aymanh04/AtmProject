@@ -44,6 +44,7 @@ int main(int argc, char**argv) {
 			printf("%s", prompt);
 			fflush(stdout);
 		} else if(FD_ISSET(bank->sockfd, &fds)) {
+			memset(recvline, '\0', 1000);
 			n = bank_recv(bank, recvline, 10000);
 			bank_process_remote_command(bank, recvline, n);
 		}
