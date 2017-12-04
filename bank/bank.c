@@ -55,9 +55,9 @@ void bank_free(Bank *bank) {
     if(bank != NULL) {
         close(bank->sockfd);
 		list_free(bank->namePin);
-		list_free(bank->nameBal);
-		RSA_free(bank->pubAtm);
-		RSA_free(bank->privBank);
+ 		list_free(bank->nameBal);
+ 		RSA_free(bank->pubAtm);
+ 		RSA_free(bank->privBank);
         free(bank);
     }
 }
@@ -123,7 +123,6 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 	sscanf(command, "%s %s %s", cmds[0], cmds[1], cmds[2]);
 	memset(sendline, '\0', 1000);
 	if (strcmp(cmds[0], "isUser") == 0) {
-		printf("Got : %s %s\n",cmds[1],cmds[2]);
 		status =  exists(bank, cmds[1]);
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
@@ -132,7 +131,6 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
 	} else if (strcmp(cmds[0], "balance") == 0) {
-		printf("Got : %s %s\n",cmds[1],cmds[2]);
 		status = atmBalance(bank, cmds[1]);
     	sprintf(sendline, "%d",status);
     	bank_send(bank, sendline, strlen(sendline));
@@ -190,7 +188,6 @@ int withdraw(Bank *bank,char *name,char* amt){
 
 int atmBalance(Bank *bank, char *name) {
 	char *balPtr;
-	printf("%s",name);
 	balPtr = (char*) list_find(bank->nameBal, name);
 	if (!balPtr) {
 		printf("No such user\n");
@@ -336,4 +333,3 @@ void balance(Bank *bank, char *name) {
 	// Printing user's balance.
 	printf("$%d\n", bal);
 }
-
