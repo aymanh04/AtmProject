@@ -1,6 +1,13 @@
-static bool logged = false;
-static char *user = "";
-char* deblank(char* input);
+#include "atm.h"
+#include "ports.h"
+#include "util/util_functions.c"
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <regex.h>
+
 ATM* atm_create() {
     ATM *atm = (ATM*) malloc(sizeof(ATM));
     if(atm == NULL) {
@@ -23,7 +30,9 @@ ATM* atm_create() {
     bind(atm->sockfd,(struct sockaddr *)&atm->atm_addr,sizeof(atm->atm_addr));
 
     // Set up the protocol state
-    // TODO set up more, as needed
+    atm->user = malloc(251);
+    memset(atm->user,'\0',251);
+    atm->logged = false;
 
     return atm;
 }
@@ -52,8 +61,8 @@ void atm_process_command(ATM *atm, char *command) {
     int i =0;
     char *cmds[2];
     for (i = 0; i < 2; i++) {
-	cmds[i] = malloc(251);
-	memset(cmds[i], '\0', 251);
+		cmds[i] = malloc(251);
+		memset(cmds[i], '\0', 251);
     }
 
     sscanf(command, "%s %s", cmds[0], cmds[1]);
@@ -73,7 +82,7 @@ void atm_process_command(ATM *atm, char *command) {
     	    printf("Usage: end-session\n");
 
         } else {
-	    end_session();
+	    end_session(atm);
         }
     } else {
         printf("Invalid command\n");
@@ -85,64 +94,60 @@ void atm_process_command(ATM *atm, char *command) {
 }
 
 void begin_session(char *data, ATM *atm){
-    char *namePattern = "^[a-zA-Z]{1,250}$";
-    char *pinPattern = "^[0-9][0-9][0-9][0-9]$";
     char recvline[10000];
     int n;
     FILE *fp;
 
-    if(logged){
+    if(atm->logged){
       printf("A user is already logged in\n");
       return;
     }
-    if(!reg_matches(data, namePattern)){
+    if(!reg_matches(data, "^[a-zA-Z]{1,250}$")){
       printf("Usage: begin-session <user-name>\n");
       return;
     }
-    char *isuser = malloc(strlen(data)+strlen("isUser "));
+    char *isuser = malloc(strlen(data)+8);
     strcpy(isuser,"isUser ");
     strcat(isuser,data);
 
-    //atm_send(atm, isuser, strlen(isuser));
-    //n = atm_recv(atm,recvline,10000);
-    //recvline[n] =0;
-    //if(!recvline){
-    //  printf("No such user");
-    //  return;
-    //}
+    atm_send(atm, isuser, strlen(isuser));
+    n = atm_recv(atm,recvline,10000);
+    recvline[n] =0;
+    if(!recvline){
+    	printf("No such user");
+		free(isuser);
+    	return;
+    }
 
-    char *name = malloc(strlen(data)+strlen(".card"));
+    char *name = malloc(strlen(data)+6);
     strcpy(name,data);
     strcat(name,".card");
 
     fp = fopen(name, "r");
-    char *line = malloc(5);
-    memset(line, '\0', 5);
-    char pin[5];
+    char *line = malloc(256);
+    memset(line, '\0', 256);
+    char *pin = malloc(256);
+    memset(pin, '\0', 256);
     
     if(!fp){
         printf("Unable to access %s’s card\n",data);
-        return;
     } else {
-      fgets(line,5,fp);
-      printf("PIN? ");
-      fgets(pin, 5,stdin);
-      //sscanf("%s", pin);
-      printf("%s\n",line);
-      printf("%s\n",pin);
-      if(!reg_matches(pin, pinPattern)) {
-        printf("Not authorized pattern\n");
-	if(!strcmp(pin,line)){
-printf("Not authorized str\n");
-}
-      } else {
-        printf("Authorized\n");
-        logged = true;
-        user = data;
-      }
+		fgets(line,256,fp);
+		printf("PIN? ");
+		fgets(pin,256,stdin);
+
+		if(reg_matches(pin, "[0-9][0-9][0-9][0-9]") && strcmp(pin,line) == 0) {
+			printf("Authorized\n");
+		    strncpy(atm->user,data,strlen(data));
+			atm->logged = true;
+		} else {
+		    printf("Not authorized\n");
+		}
     }
+    free(isuser);
     free(line);
     free(name);
+	free(pin);
     fclose(fp);
 }
 
@@ -151,7 +156,7 @@ void withdraw(char *amt, ATM *atm){
     char recvline[10000];
     int num = atoi(amt);
     int n = 0;
-    if(!logged){
+    if(!atm->logged){
       printf("No user logged in\n");
       return;
     }
@@ -159,9 +164,9 @@ void withdraw(char *amt, ATM *atm){
       printf("Usage: withdraw <amt>\n");
       return;
     }
-    char *withdraw = malloc(strlen("withdraw ")+strlen(user)+strlen(amt)+1);
+    char *withdraw = malloc(strlen("withdraw ")+strlen(atm->user)+strlen(amt)+1);
     strcpy(withdraw,"withdraw ");
-    strcat(withdraw,user);
+    strcat(withdraw,atm->user);
     strcat(withdraw," ");
     strcat(withdraw,amt);
 
@@ -179,13 +184,13 @@ void withdraw(char *amt, ATM *atm){
 void balance(ATM *atm){
   char recvline[10000];
   int n =0;
-  if(!logged){
+  if(!atm->logged){
     printf("No user logged in\n");
     return;
   }
-  char *balance = malloc(strlen("balance ")+strlen(user));
+  char *balance = malloc(strlen("balance ")+strlen(atm->user));
   strcpy(balance,"balance ");
-  strcat(balance,user);
+  strcat(balance,atm->user);
 
   //atm_send(atm, balance, strlen(balance));
   //n = atm_recv(atm,recvline,10000);
@@ -196,12 +201,12 @@ void balance(ATM *atm){
   free(balance);
 }
 
-void end_session(){
-    if(!logged){
+void end_session(ATM* atm){
+    if(!atm->logged){
         printf("No user logged in\n");
     } else {
         printf("User logged out\n");
-        logged = false;
-        user = "";
+        atm->logged = false;
+	memset(atm->user,'\0',251);
     }
 }
