@@ -77,41 +77,7 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	fputs(pubKeyStrBank, atmFile);
 	fputs("\n\n", atmFile);
 		
-	// Creating the private key file and generating the private key. 
-	printf("Creating private key file  & key.\n");
-	bioPrivBank = BIO_new_file("privateBank.pem", "w+");
-	if (PEM_write_bio_RSAPrivateKey(bioPrivBank, rsaBank, NULL, NULL, 0, NULL, NULL) != 1) {
-		BIO_free_all(bioPrivBank);
-		BN_free(bnBank);
-		RSA_free(rsaBank);
-		return -1;
-	}
-	BIO_free_all(bioPrivBank);
-
-	privKeyFile = fopen("privateBank.pem", "r");
-
-	while ((lines = getline(&line, &len, privKeyFile)) != -1){
-		strcat(privKeyStrBank, line);
-	}
-
-	fclose(privKeyFile);
-	printf("Writing private key to file.\n");
-	// Writing to init.bank
-	fputs("Private Key Size: ", bankFile);
-	fprintf(bankFile, "%d\n", (int)strlen(privKeyStrBank));
-	//fputs("\n", bankFile);
-	fputs("Private: ", bankFile);
-	fputs(privKeyStrBank, bankFile);
-	fputs("\n", bankFile);
-
-	// Freeing all structures/memory used. 
-	BN_free(bnBank);
-	RSA_free(rsaBank);
-	free(pubKeyStrBank);
-	free(privKeyStrBank);
-
-
-// Creating ATM keys.
+// Creating ATM pubKey
 	bnAtm = BN_new();
 	if (BN_set_word(bnAtm, RSA_F4) != 1) {
 		BN_free(bnAtm);
@@ -160,6 +126,43 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	fputs(pubKeyStrAtm, bankFile);
 	fputs("\n\n", bankFile);
 
+
+	// Creating the private key file and generating the private key. 
+	printf("Creating private key file  & key.\n");
+	bioPrivBank = BIO_new_file("privateBank.pem", "w+");
+	if (PEM_write_bio_RSAPrivateKey(bioPrivBank, rsaBank, NULL, NULL, 0, NULL, NULL) != 1) {
+		BIO_free_all(bioPrivBank);
+		BN_free(bnBank);
+		RSA_free(rsaBank);
+		return -1;
+	}
+	BIO_free_all(bioPrivBank);
+
+	privKeyFile = fopen("privateBank.pem", "r");
+
+	while ((lines = getline(&line, &len, privKeyFile)) != -1){
+		strcat(privKeyStrBank, line);
+	}
+
+	fclose(privKeyFile);
+	printf("Writing private key to file.\n");
+	// Writing to init.bank
+	fputs("Private Key Size: ", bankFile);
+	fprintf(bankFile, "%d\n", (int)strlen(privKeyStrBank));
+	//fputs("\n", bankFile);
+	fputs("Private: ", bankFile);
+	fputs(privKeyStrBank, bankFile);
+	fputs("\n", bankFile);
+
+	// Freeing all structures/memory used. 
+	BN_free(bnBank);
+	RSA_free(rsaBank);
+	free(pubKeyStrBank);
+	free(privKeyStrBank);
+
+
+// Creating ATM keys.
+
 	// Creating the private key file and generating the private key. 
 	printf("Creating private key file  & key.\n");
 	bioPrivAtm = BIO_new_file("privateAtm.pem", "w+");
@@ -196,6 +199,14 @@ int gen_keypairs(FILE *bankFile, FILE *atmFile) {
 	free(privKeyStrAtm);
 
 	// Do rest of init down here...
+
+
+	RSA *r = RSA_new();
+	r = PEM_read_RSA_PUBKEY(bankFile, &r, NULL, NULL);
+
+	BIO *bioPubBank2 = BIO_new_file("publicBankTest.pem", "w+");
+	PEM_write_bio_RSAPublicKey(bioPubBank2, r);
+	BIO_free_all(bioPubBank2);
 	return 1;
 }
 

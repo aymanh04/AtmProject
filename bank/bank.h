@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include "hash_table.h"
 #include "list.h"
+#include <openssl/rsa.h>
 
 typedef struct _Bank {
 	// Networking state
@@ -37,6 +38,8 @@ typedef struct _Bank {
 	List *nameBal;
 	char *fname;
 	FILE *file;
+	RSA *pubAtm;
+	RSA *privBank;
 
 } Bank;
 

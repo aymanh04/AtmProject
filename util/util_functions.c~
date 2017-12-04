@@ -3,6 +3,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <regex.h>
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/evp.h>
 
 /* 
 	Splits a line containing a bank command and arguments. 
@@ -38,7 +43,6 @@ int bank_split_line(char *arr[], char *line) {
 
 int getKeyLen(int whichKey, int whichSys, char *path) {
 	FILE *fp;
-	char *sysPath;
 	char *type;
 	char *strptr;
 	char chr;
@@ -111,14 +115,14 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 	//char *sysPath;
 	char *type;
 	char *strptr;
-	char *chr;
 	//char num[6];
-	char *line = malloc(2048);
+	char *line = malloc(512);
 	//char *key = malloc(keylen);
 	//size_t len;
-	int i = 0, cnt = 0;
+	int cnt = 0;
 	//regex_t regex;
 
+	memset(line, '\0', 512);
 	if (!key)
 		return NULL;
 
@@ -154,7 +158,8 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 		}*/
 	}
 
-	while (fgets(line, 2048, fp)) {
+
+	while (fgets(line, 512, fp)) {
 		// Getting the starting position of the key and copying characters.
 		//printf("line: %s\n", line);
 		if ((strptr = strstr(line, type)) != NULL) {
@@ -164,29 +169,71 @@ char* getKey(int whichKey, int whichSys, char *path, char *key, int keylen) {
 			else // 9 for Private Key
 				strptr += 9;
 			//printf("%s\n", strptr);
-			printf("yes.\n");
-			
 			strncpy(key, strptr, strlen(line) - strlen(type));
-			cnt += (int) (sizeof(line) - sizeof(type));
+			cnt += (int) (strlen(line) - strlen(type));
 		} else {
-			// Getting the rest of the key if it was too long to 
-			if (cnt + (int)strlen(line) > keylen) {
-				strncat(key, line, (keylen - cnt));
-				cnt += keylen - cnt;
-			} else {
-				//printf("%s\n", line);
-				strcat(key, line);
-				cnt += strlen(line);
+			if (cnt > 0) {
+				// Getting the rest of the key if it was too long to 
+				if (cnt + (int)strlen(line) > keylen) {
+					strncat(key, line, (keylen - cnt));
+					cnt += keylen - cnt;
+				} else {
+					//printf("%s\n", line);
+					strcat(key, line);
+					cnt += strlen(line);
+				}
 			}
 			
 		}
 		
 	}
 	fclose(fp);
-	free(line);
+	//free(line);
 	key[cnt] = '\0';
 	return key;
 }
+
+RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
+	int keylen;
+	char *pubKey;
+
+	keylen = getKeyLen(whichKey, whichSys, fname);
+	pubKey = malloc(keylen + 1);
+	memset(pubKey, '\0', keylen + 1);
+	getKey(whichKey, whichSys, fname, pubKey, keylen);
+
+	/*keylen = getKeyLen(1, 0, fname);
+	printf("privkey keylen: %d\n", keylen);
+	privKey = malloc(keylen + 1);
+	memset(privKey, '\0', keylen + 1);
+	getKey(1, 0, bank->fname, privKey, keylen);
+	printf("Private Key: %s\n", privKey);
+	//free(privKey);*/
+
+	RSA *r = RSA_new();
+	BIO *bioTemp = BIO_new_mem_buf((void*)pubKey, strlen(pubKey));	
+	if (whichKey == 0) 
+		PEM_read_bio_RSAPublicKey(bioTemp, &r, NULL, NULL);
+	else 
+		PEM_read_bio_RSAPrivateKey(bioTemp, &r, NULL, NULL);
+	
+	return r;
+}
+
+
+int encryptMsg(RSA *rsa, char *msg, char *enc) {
+	int len = RSA_public_encrypt(strlen(msg)+1, (unsigned char*)msg,
+		(unsigned char*)enc, rsa, RSA_PKCS1_OAEP_PADDING);
+
+	return encrypt_len;
+}
+
+
+void decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
+	RSA_private_decrypt(encLen, (unsigned char*)enc, (unsigned char*)msg,
+                       rsa, RSA_PKCS1_OAEP_PADDING);
+}
+
 
 
 bool reg_matches(const char *str, const char *pattern) {

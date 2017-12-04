@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "bank.h"
 #include "ports.h"
+#include <openssl/rsa.h>
 
 static const char prompt[] = "BANK: ";
 
@@ -26,7 +27,7 @@ int main(int argc, char**argv) {
 		return 64;
 	}
 
-	Bank *bank = bank_create(fp);
+	Bank *bank = bank_create(fp, fname);
 
 	printf("%s", prompt);
 	fflush(stdout);

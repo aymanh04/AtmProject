@@ -35,9 +35,10 @@ typedef struct _Bank {
 
 	List *namePin;
 	List *nameBal;
-
-	HashTable *accounts;
+	char *fname;
 	FILE *file;
+	RSA *pubAtm;
+	RSA *privBank;
 
 } Bank;
 

@@ -9,6 +9,11 @@
 #include "util/hash_table.c"
 //#include "util/util_functions.c"
 #include "util/user_data.c"
+#include <openssl/bio.h>
+#include <openssl/ssl.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/evp.h>
 
 Bank* bank_create(FILE *fp, char *fname) {
     Bank *bank = (Bank*) malloc(sizeof(Bank));
@@ -41,6 +46,8 @@ Bank* bank_create(FILE *fp, char *fname) {
 	bank->nameBal =	list_create();
 	bank->fname = fname;
 	bank->file = fp;
+	bank->pubAtm = retrieveKey(0, 0, fname);
+	bank->privBank = retrieveKey(1, 0, fname);
     return bank;
 }
 
@@ -164,21 +171,41 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 		return;
 	}
 
-	int keylen = getKeyLen(0, 0, bank->fname);
+	/*int keylen = getKeyLen(0, 0, bank->fname);
 	printf("pubkey keylen: %d\n", keylen);
 	char *pubKey = malloc(keylen + 1);
 	memset(pubKey, '\0', keylen + 1);
 	getKey(0, 0, bank->fname, pubKey, keylen);
-	
 	printf("Public Key: %s\n", pubKey);
+	//free(pubKey);
+
 	keylen = getKeyLen(1, 0, bank->fname);
 	printf("privkey keylen: %d\n", keylen);
 	char *privKey = malloc(keylen + 1);
 	memset(privKey, '\0', keylen + 1);
-	getKey(0, 0, bank->fname, privKey, keylen);
+	getKey(1, 0, bank->fname, privKey, keylen);
 	printf("Private Key: %s\n", privKey);
+	//free(privKey);
 
-	fprintf(fp, "%s,%s", pin, balance);
+	RSA *r = RSA_new();
+	BIO *bioTemp = BIO_new_mem_buf((void*)pubKey, strlen(pubKey));
+	PEM_read_bio_RSAPublicKey(bioTemp, &r, NULL, NULL);*/
+	char *tmp = malloc(RSA_size(bank->pubAtm));
+	int length = encryptMsg(bank->pubAtm, pin, tmp);
+	//printf("encrypted: %s\n", tmp);
+
+	//RSA *r = retrieveKey(1, 1, "./test.atm");
+	//char *tmp2 = malloc(RSA_size(r));
+	//memset(tmp2, '\0', 256);
+	
+	//decryptMsg(r, tmp, tmp2, length);
+	//printf("decrypted: %s\n", tmp2);
+
+	/*BIO *bioTemp = BIO_new_mem_buf((void*)tmp, strlen(tmp));
+	BIO *bioPubBank = BIO_new_file("publicBankTest.pem", "w+");
+	PEM_write_bio_RSAPrivateKey(bioPubBank, r, NULL, NULL, 0, NULL, NULL);
+	BIO_free_all(bioPubBank);*/
+	fprintf(fp, "%s", tmp);
 	fclose(fp);
 	printf("Created user %s\n", name);
 }
