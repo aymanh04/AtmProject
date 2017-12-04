@@ -222,8 +222,8 @@ RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
 
 
 int encryptMsg(RSA *rsa, char *msg, char *enc) {
-	int len = RSA_public_encrypt(strlen(msg), (unsigned char*)msg,
-		(unsigned char*)enc, rsa, RSA_PKCS1_PADDING);
+	int len = RSA_public_encrypt(strlen(msg) + 1, (unsigned char*)msg,
+		(unsigned char*)enc, rsa, RSA_PKCS1_OAEP_PADDING);
 
 	return len;
 }
@@ -231,7 +231,7 @@ int encryptMsg(RSA *rsa, char *msg, char *enc) {
 
 void decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
 	RSA_private_decrypt(encLen, (unsigned char*)enc, (unsigned char*)msg,
-                       rsa, RSA_PKCS1_PADDING);
+                       rsa, RSA_PKCS1_OAEP_PADDING);
 }
 
 

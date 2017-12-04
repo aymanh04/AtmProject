@@ -223,23 +223,15 @@ RSA* retrieveKey(int whichKey, int whichSys, char *fname) {
 
 int encryptMsg(RSA *rsa, char *msg, char *enc) {
 	int len = RSA_public_encrypt(strlen(msg), (unsigned char*)msg,
-		(unsigned char*)enc, rsa, RSA_PKCS1_PADDING);
+		(unsigned char*)enc, rsa, RSA_PKCS1_OAEP_PADDING);
 
 	return len;
 }
 
 
-char *decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
-	int k = RSA_private_decrypt(encLen, (unsigned char*)enc, (unsigned char*)msg,
-                       rsa, RSA_PKCS1_PADDING);
-
-	if(k == -1)
-		return NULL;
-	printf("K: %d\n",k);
-	int i = 0;
-	for(; i< k; i++)
-		printf("%x", msg[i]);
-    return msg;
+void decryptMsg(RSA *rsa, char *enc, char *msg, int encLen) {
+	RSA_private_decrypt(encLen, (unsigned char*)enc, (unsigned char*)msg,
+                       rsa, RSA_PKCS1_OAEP_PADDING);
 }
 
 

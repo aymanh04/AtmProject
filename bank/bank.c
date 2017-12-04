@@ -142,12 +142,11 @@ void bank_process_remote_command(Bank *bank, char *command, size_t len) {
 
 int isUser(Bank* bank, char *name){
   char *balPtr;
-  balPtr = (char*) list_find(bank->nameBal, name)
+  balPtr = (char*) list_find(bank->nameBal, name);
   if(!balPtr){
     return 1;
-  } else {
-    return 0;
   }
+	return 0;
 }
 
 int withdraw(Bank *bank,char *name,char* amt){
@@ -157,7 +156,7 @@ int withdraw(Bank *bank,char *name,char* amt){
 	long long amount;
 
 	memset(balance, '\0', 12);
-  amount = strtol(amt, NULL, 10)
+  amount = strtol(amt, NULL, 10);
 
 	// Checking if the user is already in the bank systems.
 	//user = hash_table_find(bank->accounts, name);
@@ -295,15 +294,25 @@ void create_user(Bank *bank, char *name, char *pin, char *balance) {
 	BIO *bioPubBank = BIO_new_file("publicBankTest.pem", "w+");
 	PEM_write_bio_RSAPrivateKey(bioPubBank, r, NULL, NULL, 0, NULL, NULL);
 	BIO_free_all(bioPubBank);*/
-	fprintf(fp, "%s", tmp);
-	char *tmp3 = malloc(256);
-	//memset(tmp3, '\0', 256);
-	fgets(tmp3, 256, fp);
-	tmp2 = decryptMsg(r2, tmp3, tmp2, 256);
-	printf("decrypted: %s\n", tmp2);
-
+	fwrite(tmp, 1, 256, fp);
 	fclose(fp);
+	//fp = fopen(filename, "r");
+
+
+//Use this to decrypt in ATM
+	char *tmp3 = malloc(RSA_size(r2));
+	//memset(tmp3, '\0', 256);
+	fread(tmp3, 1, 256, fp);
+	decryptMsg(r2, tmp3, tmp2, 256);
+	//printf("decrypted: %s\n", tmp2);
+
+	
+
+
 	printf("Created user %s\n", name);
+	free(tmp3);
+	free(tmp2);
+	free(tmp);
 }
 
 void deposit(Bank *bank, char *name, char *amt) {
