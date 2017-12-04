@@ -22,7 +22,11 @@ int main()
     while (fgets(user_input, 10000,stdin) != NULL)
     {
         atm_process_command(atm, user_input);
-        printf("%s", prompt);
+	if(atm->logged){
+	    printf("ATM (%s): ", atm->user);
+        } else {
+            printf("%s", prompt);
+        }
         fflush(stdout);
     }
 	return EXIT_SUCCESS;
