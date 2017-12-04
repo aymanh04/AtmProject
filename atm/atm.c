@@ -111,7 +111,11 @@ void begin_session(char *data, ATM *atm){
     strcpy(isuser,"isUser ");
     strcat(isuser,data);
 
-    atm_send(atm, isuser, strlen(isuser));
+	//unsigned char *tmp = malloc(RSA_size(atm->pubBank));
+	//encryptMsg(atm->pubBank, isuser, tmp);
+
+    //atm_send(atm, tmp, strlen(tmp));
+	atm_send(atm, isuser, strlen(isuser));
     n = atm_recv(atm,recvline,10000);
     recvline[n] =0;
     if(strcmp(recvline,"0") ==0){
@@ -136,9 +140,7 @@ void begin_session(char *data, ATM *atm){
     if(!fp){
         printf("Unable to access %s\'s card\n",data);
     } else {
-		//fgets(inputLine,256,fp);
 		char *tmp2 = malloc(RSA_size(atm->privATM));
-		//printf(inputLine);
 		char *tmp3 = malloc(RSA_size(atm->privATM));
 
     	fread(tmp3, 1, 256, fp);
@@ -186,6 +188,8 @@ void withdraw(char *amt, ATM *atm){
     strcat(withdraw," ");
     strcat(withdraw,amount);
 
+	
+
     atm_send(atm, withdraw, strlen(withdraw));
     n = atm_recv(atm,recvline,10000);
     recvline[n]=0;
@@ -208,7 +212,6 @@ void balance(ATM *atm){
   	char *balance = malloc(strlen("balance ")+strlen(atm->user));
  	strcpy(balance,"balance ");
  	strcat(balance,atm->user);
-	printf("%s : %s",atm->user,balance);
 
   	atm_send(atm, balance, strlen(balance));
  	n = atm_recv(atm,recvline,10000);
