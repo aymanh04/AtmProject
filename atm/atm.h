@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct _ATM
 {
@@ -24,7 +25,8 @@ typedef struct _ATM
     struct sockaddr_in atm_addr;
 
     // Protocol state
-    // TODO add more, as needed
+    char* user;
+    bool logged;
 } ATM;
 
 ATM* atm_create();
