@@ -111,11 +111,10 @@ void begin_session(char *data, ATM *atm){
     strcpy(isuser,"isUser ");
     strcat(isuser,data);
 
-	//printf("%s %d",isuser,strlen(isuser));
     atm_send(atm, isuser, strlen(isuser));
     n = atm_recv(atm,recvline,10000);
-    recvline[n] = 0;
-    if(strcmp(recvline,"0") == 0){
+    recvline[n] =0;
+    if(strcmp(recvline,"0") ==0){
     	printf("No such user\n");
 		free(isuser);
 		memset(recvline, '\0', 10000);
@@ -144,18 +143,15 @@ void begin_session(char *data, ATM *atm){
 
     	fread(tmp3, 1, 256, fp);
     	decryptMsg(atm->privATM, tmp3, tmp2, 256);
-    	printf("decrypted: %s\n", tmp2);
+		strcat(tmp2,"\n");
 
 		printf("PIN? ");
 		fgets(pin,256,stdin);
 
-		if(reg_matches(pin, "[0-9][0-9][0-9][0-9]")) {
-			printf("matched\n");
-			if (strncmp(pin,tmp2, 4) == 0) {
-				printf("Authorized\n");
-				strncpy(atm->user,data,strlen(data));
-				atm->logged = true;
-			}
+		if(reg_matches(pin, "[0-9][0-9][0-9][0-9]") && strncmp(pin,tmp2,4) == 0) {
+			printf("Authorized\n");
+		    strncpy(atm->user,data,strlen(data));
+			atm->logged = true;
 		} else {
 		    printf("Not authorized\n");
 		}
